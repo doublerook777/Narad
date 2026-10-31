@@ -59,6 +59,7 @@ async function main() {
   console.log(`\nFinished in ${durationSec}s. Total claims: ${claims.length}`);
   console.log(`\nFinal Claims JSON:`);
   console.log(JSON.stringify(claims, null, 2));
+  process.exit(0);
 }
 
 main().catch((err) => {
