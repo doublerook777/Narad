@@ -24,21 +24,21 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 
 ## Member A: Pipeline / Backend
 
-**Branch:** `main`
-**Now working on:** Phase 0 complete; pushing scaffold for Member B
-**Half-done / where I stopped:** Checkpoint 0 reached
+**Branch:** `a/p1-core`
+**Now working on:** Phase 1 complete (A1.1 - A1.6)
+**Half-done / where I stopped:** Checkpoint 1 verification ready
 **Blocked by:** —
 
 - [x] A0.1 Scaffold Next.js
 - [x] A0.2 Install deps + scripts
 - [x] A0.3 `lib/types.ts` + `.env.example` on main
 - [x] A0.4 `scripts/smoke.ts`
-- [ ] A1.1 `lib/tinyfish.ts` wrappers
-- [ ] A1.2 `lib/gemini.ts` + `lib/cache.ts`
-- [ ] A1.3 `lib/sources.ts` domain tiers
-- [ ] A1.4 `extract.ts`
-- [ ] A1.5 `verify.ts`
-- [ ] A1.6 `check.ts` + CLI
+- [x] A1.1 `lib/tinyfish.ts` wrappers
+- [x] A1.2 `lib/gemini.ts` + `lib/cache.ts`
+- [x] A1.3 `lib/sources.ts` domain tiers
+- [x] A1.4 `extract.ts`
+- [x] A1.5 `verify.ts`
+- [x] A1.6 `check.ts` + CLI
 - [ ] A2.1 `receipt.ts` (Browser)
 - [ ] A2.2 `lib/budget.ts`
 - [ ] A2.3 Portal map
@@ -114,3 +114,4 @@ Log **every real Agent run** and the wallet balance at each checkpoint. Search a
 Format: `HH:MM [A|B] did X · next: Y · notes`
 
 - 13:14 [A] completed A0.1 - A0.4 (scaffold, deps, lib/types.ts, .env.example, scripts/smoke.ts) · next: Member B begins B0.1/B0.2, Member A begins Phase 1 (lib/tinyfish.ts) · pushed scaffold to main
+- 13:22 [A] completed A1.1 - A1.6 on branch a/p1-core (lib/tinyfish.ts, lib/gemini.ts, lib/cache.ts, lib/sources.ts, extract.ts, verify.ts, check.ts, scripts/check.ts) · tsc passed · degraded gracefully to unverifiable without keys · next: Phase 2 (receipt.ts, budget.ts, investigate.ts)
