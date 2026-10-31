@@ -1,5 +1,11 @@
 import nextEnv from "@next/env";
-const { loadEnvConfig } = (nextEnv as any).default || nextEnv;
+
+interface NextEnvModule {
+  default?: { loadEnvConfig: (dir: string) => void };
+  loadEnvConfig?: (dir: string) => void;
+}
+const envMod = nextEnv as unknown as NextEnvModule;
+const loadEnvConfig = envMod.default?.loadEnvConfig || envMod.loadEnvConfig || (() => {});
 loadEnvConfig(process.cwd());
 
 import { TinyFish } from "@tiny-fish/sdk";
@@ -8,7 +14,7 @@ import { GoogleGenAI } from "@google/genai";
 async function main() {
   const tinyfishApiKey = process.env.TINYFISH_API_KEY;
   const geminiApiKey = process.env.GEMINI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
   console.log("=== SMOKE TEST START ===");
 
@@ -24,8 +30,8 @@ async function main() {
         contents: "Respond with the word 'OK'.",
       });
       console.log("✅ Gemini response:", response.text?.trim());
-    } catch (err: any) {
-      console.error("❌ Gemini failed:", err.message || err);
+    } catch (err: unknown) {
+      console.error("❌ Gemini failed:", err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -46,8 +52,8 @@ async function main() {
       language: "en",
     });
     console.log("✅ TinyFish Search success. Results found:", Array.isArray(searchRes) ? searchRes.length : "OK");
-  } catch (err: any) {
-    console.error("❌ TinyFish Search failed:", err.message || err);
+  } catch (err: unknown) {
+    console.error("❌ TinyFish Search failed:", err instanceof Error ? err.message : String(err));
   }
 
   // 4. Fetch Test
@@ -57,8 +63,8 @@ async function main() {
       urls: ["https://ourworldindata.org"],
     });
     console.log("✅ TinyFish Fetch success. Result:", fetchRes ? "OK" : "Empty");
-  } catch (err: any) {
-    console.error("❌ TinyFish Fetch failed:", err.message || err);
+  } catch (err: unknown) {
+    console.error("❌ TinyFish Fetch failed:", err instanceof Error ? err.message : String(err));
   }
 
   // 5. Browser Session (Create + Delete)
@@ -76,11 +82,11 @@ async function main() {
         headers: { "X-API-Key": tinyfishApiKey },
       });
       console.log("✅ Browser session deleted. Status:", delRes.status);
-    } catch (delErr: any) {
-      console.warn("⚠️ Browser session delete call:", delErr.message || delErr);
+    } catch (delErr: unknown) {
+      console.warn("⚠️ Browser session delete call:", delErr instanceof Error ? delErr.message : String(delErr));
     }
-  } catch (err: any) {
-    console.error("❌ TinyFish Browser session failed:", err.message || err);
+  } catch (err: unknown) {
+    console.error("❌ TinyFish Browser session failed:", err instanceof Error ? err.message : String(err));
   }
 
   // 6. Wallet Balance
@@ -88,8 +94,8 @@ async function main() {
   try {
     const wallet = await client.wallet.get();
     console.log("✅ Wallet Balance:", wallet);
-  } catch (err: any) {
-    console.error("❌ Wallet check failed:", err.message || err);
+  } catch (err: unknown) {
+    console.error("❌ Wallet check failed:", err instanceof Error ? err.message : String(err));
   }
 
   // Optional: --agent run
@@ -103,14 +109,22 @@ async function main() {
         agent_config: { max_duration_seconds: 60 },
       });
 
+      interface AgentEventPayload {
+        type: string;
+        status?: string;
+        purpose?: string;
+        result?: unknown;
+      }
+
       for await (const event of stream) {
-        console.log(`[Agent Event: ${event.type}]`, (event as any).status || (event as any).purpose || "");
-        if (event.type === "COMPLETE") {
-          console.log("✅ Agent Complete:", (event as any).result);
+        const ev = event as unknown as AgentEventPayload;
+        console.log(`[Agent Event: ${ev.type}]`, ev.status || ev.purpose || "");
+        if (ev.type === "COMPLETE") {
+          console.log("✅ Agent Complete:", ev.result);
         }
       }
-    } catch (err: any) {
-      console.error("❌ TinyAgent run failed:", err.message || err);
+    } catch (err: unknown) {
+      console.error("❌ TinyAgent run failed:", err instanceof Error ? err.message : String(err));
     }
   }
 

@@ -1,5 +1,11 @@
 import nextEnv from "@next/env";
-const { loadEnvConfig } = (nextEnv as any).default || nextEnv;
+
+interface NextEnvModule {
+  default?: { loadEnvConfig: (dir: string) => void };
+  loadEnvConfig?: (dir: string) => void;
+}
+const envMod = nextEnv as unknown as NextEnvModule;
+const loadEnvConfig = envMod.default?.loadEnvConfig || envMod.loadEnvConfig || (() => {});
 loadEnvConfig(process.cwd());
 
 import { checkTurn } from "../lib/pipeline/check";

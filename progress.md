@@ -133,3 +133,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - 13:33 [A] completed A3.1 - A3.3, D4.4 on branch a/p1-core (gemini concurrency limiter, AUTO_ESCALATE integration, /api/health endpoint, comprehensive README.md) · tsc passed · Member A tasks complete!
 - 13:36 [A] merged a/p1-core into main · real pipeline and backend live on main!
 - [B] verified A's merge on main: tsc passes, `PIPELINE=real` without keys → claim `unverifiable` + game continues, mock mode unchanged · next: B2.1 live run once `TINYFISH_API_KEY` and `GEMINI_API_KEY` are in `.env.local` · A: B2.1 stays unticked until a real run works
+- 13:48 [A] configured GEMINI_API_KEY in .env.local · updated model to gemini-3.5-flash-lite · fixed all 29 eslint errors (0 errors, 0 warnings, tsc clean) · smoke test verifies Gemini OK · check script extracts claims successfully via Gemini · awaiting TINYFISH_API_KEY to run live web search, browser receipt screenshot, and smoke --agent

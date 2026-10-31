@@ -5,16 +5,16 @@ import { resolvePortalForClaim } from "../sources";
 import { getCache, setCache } from "../cache";
 import type { Claim, Investigation, PlayerSlot, Verdict } from "../types";
 
-function extractResultJson(raw: any): {
+function extractResultJson(raw: unknown): {
   verdict: Verdict;
   foundValue?: string;
   sourceUrl?: string;
   explanation: string;
 } {
-  let parsed: any = null;
+  let parsed: Record<string, unknown> | null = null;
 
   if (typeof raw === "object" && raw !== null) {
-    parsed = raw;
+    parsed = raw as Record<string, unknown>;
   } else if (typeof raw === "string") {
     let clean = raw.trim();
     if (clean.startsWith("```json")) {
@@ -23,7 +23,7 @@ function extractResultJson(raw: any): {
       clean = clean.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
     try {
-      parsed = JSON.parse(clean);
+      parsed = JSON.parse(clean) as Record<string, unknown>;
     } catch {
       // Fallback text parsing if not strict JSON
       parsed = null;
@@ -33,8 +33,9 @@ function extractResultJson(raw: any): {
   const validVerdicts: Verdict[] = ["supported", "refuted", "misleading", "unverifiable"];
   let verdict: Verdict = "unverifiable";
 
-  if (parsed?.verdict && validVerdicts.includes(parsed.verdict.toLowerCase())) {
-    verdict = parsed.verdict.toLowerCase() as Verdict;
+  const parsedVerdict = typeof parsed?.verdict === "string" ? (parsed.verdict.toLowerCase() as Verdict) : null;
+  if (parsedVerdict && validVerdicts.includes(parsedVerdict)) {
+    verdict = parsedVerdict;
   } else if (typeof raw === "string") {
     const lower = raw.toLowerCase();
     if (lower.includes("refuted") || lower.includes("disproved") || lower.includes("false")) {
@@ -51,7 +52,7 @@ function extractResultJson(raw: any): {
     foundValue: parsed?.foundValue ? String(parsed.foundValue) : undefined,
     sourceUrl: parsed?.sourceUrl ? String(parsed.sourceUrl) : undefined,
     explanation:
-      parsed?.explanation ||
+      (typeof parsed?.explanation === "string" ? parsed.explanation : undefined) ||
       (typeof raw === "string" ? raw.slice(0, 200) : "Investigation completed by TinyAgent."),
   };
 }
@@ -121,20 +122,30 @@ export async function investigate(
 
     let runId = inv.id;
 
+    interface StreamEventPayload {
+      type: string;
+      run_id?: string;
+      streaming_url?: string;
+      purpose?: string;
+      action?: string;
+      result?: unknown;
+    }
+
     for await (const event of stream) {
-      if (event.type === "STARTED") {
-        runId = (event as any).run_id || runId;
+      const ev = event as unknown as StreamEventPayload;
+      if (ev.type === "STARTED") {
+        runId = ev.run_id || runId;
         inv.steps.push(`Agent started (Run: ${runId.slice(0, 8)})`);
         emit(inv);
-      } else if (event.type === "STREAMING_URL") {
-        inv.streamingUrl = (event as any).streaming_url;
+      } else if (ev.type === "STREAMING_URL") {
+        inv.streamingUrl = ev.streaming_url;
         emit(inv);
-      } else if (event.type === "PROGRESS") {
-        const purpose = (event as any).purpose || (event as any).action || "Navigating portal...";
+      } else if (ev.type === "PROGRESS") {
+        const purpose = ev.purpose || ev.action || "Navigating portal...";
         inv.steps.push(purpose);
         emit(inv);
-      } else if (event.type === "COMPLETE") {
-        const rawResult = (event as any).result;
+      } else if (ev.type === "COMPLETE") {
+        const rawResult = ev.result;
         inv.result = extractResultJson(rawResult);
         inv.status = "done";
         inv.steps.push("Investigation finished.");

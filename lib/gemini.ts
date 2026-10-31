@@ -41,17 +41,22 @@ class Semaphore {
 // Concurrency limit to prevent overwhelming Gemini per-minute free-tier quotas
 const geminiSemaphore = new Semaphore(2);
 
-function isRateLimitError(err: any): boolean {
+function isRateLimitError(err: unknown): boolean {
   if (!err) return false;
-  const msg = String(err.message || err);
-  const status = err.status || err.statusCode || err.code;
-  return (
-    status === 429 ||
-    msg.includes("429") ||
-    msg.includes("RESOURCE_EXHAUSTED") ||
-    msg.includes("rate limit") ||
-    msg.includes("Quota exceeded")
-  );
+  if (typeof err === "object") {
+    const errorObj = err as Record<string, unknown>;
+    const msg = String(errorObj.message || err);
+    const status = errorObj.status || errorObj.statusCode || errorObj.code;
+    return (
+      status === 429 ||
+      msg.includes("429") ||
+      msg.includes("RESOURCE_EXHAUSTED") ||
+      msg.includes("rate limit") ||
+      msg.includes("Quota exceeded")
+    );
+  }
+  const msg = String(err);
+  return msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("rate limit");
 }
 
 function cleanJsonString(raw: string): string {
@@ -66,7 +71,7 @@ function cleanJsonString(raw: string): string {
 
 export async function json<T>(
   prompt: string,
-  schema?: any,
+  schema?: Record<string, unknown>,
   options?: {
     systemInstruction?: string;
     model?: string;
@@ -88,7 +93,7 @@ export async function json<T>(
     throw new Error("[gemini] GEMINI_API_KEY is not configured");
   }
 
-  const model = options?.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = options?.model || process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   const client = getClient();
 
   const maxRetries = 3;
@@ -97,7 +102,7 @@ export async function json<T>(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     await geminiSemaphore.acquire();
     try {
-      const config: any = {
+      const config: Record<string, unknown> = {
         responseMimeType: "application/json",
       };
       if (schema) {
@@ -120,7 +125,7 @@ export async function json<T>(
       // Save to disk cache
       await setCache<T>(cacheKind, cacheKey, parsed);
       return parsed;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const is429 = isRateLimitError(err);
       if (is429 && attempt < maxRetries) {
         console.warn(`[gemini] 429 rate limit hit, retrying in ${delayMs}ms (attempt ${attempt}/${maxRetries})...`);

@@ -87,10 +87,10 @@ export async function fetchPages(urls: string[], purpose?: string): Promise<Fetc
     const res = await withTimeout(task, 30_000, null);
     if (!res || !Array.isArray(res.results)) return [];
 
-    return res.results.map((r: any) => ({
+    return res.results.map((r) => ({
       url: r.url || "",
       title: r.title || "",
-      text: r.text || "",
+      text: typeof r.text === "string" ? r.text : JSON.stringify(r.text || ""),
       status: "ok" as const,
     }));
   } catch (err) {

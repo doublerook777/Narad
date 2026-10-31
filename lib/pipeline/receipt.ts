@@ -11,7 +11,6 @@ interface WarmBrowserState {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __naradWarmBrowser: WarmBrowserState | null | undefined;
 }
 

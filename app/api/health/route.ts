@@ -11,7 +11,7 @@ export async function GET() {
   const budget = await getBudgetLedger();
 
   // 2. TinyFish Check
-  let tinyfishStatus: { ok: boolean; wallet?: any; error?: string } = { ok: false };
+  let tinyfishStatus: { ok: boolean; wallet?: unknown; error?: string } = { ok: false };
   const tinyfishKey = process.env.TINYFISH_API_KEY;
 
   if (!tinyfishKey) {
@@ -21,15 +21,15 @@ export async function GET() {
       const tf = getTinyFishClient();
       const wallet = await tf.wallet.get();
       tinyfishStatus = { ok: true, wallet };
-    } catch (tfErr: any) {
-      tinyfishStatus = { ok: false, error: tfErr.message || String(tfErr) };
+    } catch (tfErr: unknown) {
+      tinyfishStatus = { ok: false, error: tfErr instanceof Error ? tfErr.message : String(tfErr) };
     }
   }
 
   // 3. Gemini Check
-  let geminiStatus: { ok: boolean; model: string; error?: string } = {
+  const geminiStatus: { ok: boolean; model: string; error?: string } = {
     ok: false,
-    model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+    model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
   };
   const geminiKey = process.env.GEMINI_API_KEY;
 
@@ -43,8 +43,8 @@ export async function GET() {
         contents: "Respond with 'pong'",
       });
       geminiStatus.ok = !!pingRes.text;
-    } catch (gErr: any) {
-      geminiStatus.error = gErr.message || String(gErr);
+    } catch (gErr: unknown) {
+      geminiStatus.error = gErr instanceof Error ? gErr.message : String(gErr);
     }
   }
 

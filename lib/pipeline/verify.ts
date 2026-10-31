@@ -89,7 +89,7 @@ export async function verifyClaim(
 
     // 1. Search Tier 1 credible domains first
     const tier1Domains = getTier1SearchDomains();
-    let searchResults: SearchResult[] = await search(claimText, {
+    const searchResults: SearchResult[] = await search(claimText, {
       include_domains: tier1Domains,
       purpose: `Fact-check claim: ${claimText}`,
     });
