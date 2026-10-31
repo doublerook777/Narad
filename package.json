@@ -10,7 +10,8 @@
     "lint": "eslint",
     "smoke": "tsx scripts/smoke.ts",
     "check": "tsx scripts/check.ts",
-    "lan": "node scripts/lan.mjs"
+    "lan": "node scripts/lan.mjs",
+    "lan:dev": "node scripts/lan.mjs --dev"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

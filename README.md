@@ -117,6 +117,6 @@ Open [http://localhost:3000](http://localhost:3000) in two separate browser tabs
 
 ## Playing with a teammate on the same Wi-Fi
 
-One person runs `npm run lan` (it prints the URL). The other opens that URL in a browser, no install needed.
+One person runs `npm run lan` (production build, stable; it prints the URL). While editing code use `npm run lan:dev` (hot reload, but the home page can start flickering after a long session: restart it). The other opens that URL in a browser, no install needed.
 Rooms live in the host's memory, so only the host runs the server. If the other laptop can't connect, the host may need to open the port
 (`sudo firewall-cmd --add-port=3000/tcp` on Fedora). To test alone, open two tabs of the same browser: each tab is its own player.

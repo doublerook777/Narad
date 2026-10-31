@@ -27,20 +27,24 @@ export default function Landing() {
   const [rooms, setRooms] = useState<LobbyRoom[] | null>(null);
   const [topics, setTopics] = useState<{ topics: TrendingTopic[]; live: boolean } | null>(null);
 
-  // Lobby: refresh the public room list every 3s.
+  // Lobby: refresh the public room list every 3s (paused while the tab is hidden), or on demand with the Refresh button.
+  const [refreshing, setRefreshing] = useState(false);
+  const [nonce, setNonce] = useState(0); // bump to fetch the list right now (Find rooms button)
   useEffect(() => {
     let stop = false;
     async function load() {
       try {
         const res = await fetch("/api/rooms", { cache: "no-store" });
         const data = await res.json();
-        if (!stop) setRooms(data.rooms ?? []);
+        if (!stop) setRooms(data.rooms ?? []); // on failure we keep the last list instead of flashing "Looking for rooms…"
       } catch { /* keep the last list */ }
+      if (!stop) setTimeout(() => setRefreshing(false), 400); // so a click on the button visibly does something
     }
     void load();
-    const id = setInterval(load, 3000);
+    const id = setInterval(() => { if (!document.hidden) void load(); }, 3000);
     return () => { stop = true; clearInterval(id); };
-  }, []);
+  }, [nonce]);
+  function findRooms() { setRefreshing(true); setNonce((n) => n + 1); }
 
   // Hot topics: slow the first time (search + Gemini), cached on the server afterwards.
   useEffect(() => {
@@ -140,7 +144,10 @@ export default function Landing() {
           <div className="card flex flex-col p-6">
             <div className="flex items-baseline justify-between">
               <h2 className="text-2xl font-medium tracking-tight">Open rooms</h2>
-              <span className="eyebrow flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-ok pulse" />Live</span>
+              <div className="flex items-center gap-3">
+                <span className="eyebrow flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-ok pulse" />Live</span>
+                <button className="btn-outline px-3 py-1 text-xs" onClick={findRooms} disabled={refreshing}>{refreshing ? "Finding…" : "Find rooms"}</button>
+              </div>
             </div>
 
             <div className="mt-4 min-h-40 flex-1">
