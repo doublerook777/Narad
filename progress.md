@@ -52,27 +52,27 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 
 ## Member B: Game / UI
 
-**Branch:** `b/p0-demo-script`
-**Now working on:** B0.2 (pull scaffold, check dev server), then B1.x
-**Half-done / where I stopped:** demo script done; `DESIGN.md` (UI style guide) added by the human
-**Blocked by:** —
+**Branch:** `b/p1-rooms`
+**Now working on:** Phase 1 done with `PIPELINE=mock`. Waiting for A's `check.ts`/`investigate.ts` to do B2.1 (switch to real)
+**Half-done / where I stopped:** B2.2/B2.3/B2.4/B3.1/B3.2 are built and tested against the mock only; they need a real receipt PNG and a real `streamingUrl` to be fully verified. B0.1 (Gemini key) not done by me.
+**Blocked by:** nothing
 
 - [ ] B0.1 Gemini key works
 - [x] B0.2 Branch + dev server
 - [x] B0.3 Demo script written (below)
-- [ ] B1.1 `lib/store.ts`
-- [ ] B1.2 `lib/pipeline/mock.ts`
-- [ ] B1.3 Room API routes
-- [ ] B1.4 `lib/scoring.ts`
-- [ ] B1.5 Landing page
-- [ ] B1.6 Room page + claim cards
+- [x] B1.1 `lib/store.ts`
+- [x] B1.2 `lib/pipeline/mock.ts`
+- [x] B1.3 Room API routes
+- [x] B1.4 `lib/scoring.ts`
+- [x] B1.5 Landing page
+- [x] B1.6 Room page + claim cards
 - [ ] B2.1 Switch to real pipeline
-- [ ] B2.2 Receipts route + thumbnails
-- [ ] B2.3 Challenge button + route + scoring
-- [ ] B2.4 Investigator card (iframe + steps)
-- [ ] B3.1 Game end + winner screen
-- [ ] B3.2 Score event feed
-- [ ] B3.3 Empty/loading/error states
+- [x] B2.2 Receipts route + thumbnails
+- [x] B2.3 Challenge button + route + scoring
+- [x] B2.4 Investigator card (iframe + steps)
+- [x] B3.1 Game end + winner screen
+- [x] B3.2 Score event feed
+- [ ] B3.3 Empty/loading/error states (mostly done: waiting, loading, not-found, join; no network-error banner yet)
 - [ ] D4.3 Backup video
 
 ---
@@ -88,6 +88,12 @@ Log **every real Agent run** and the wallet balance at each checkpoint. Search a
 ---
 
 ## Decisions (append; anything that changes plan.md or agents.md)
+
+- [B] `next.config.ts`: turned off `cacheComponents`, `partialPrefetching` and `agentRules` (they fight the in-memory/polling design, and `agentRules` generated an `AGENTS.md` that collides with `agents.md` on Mac/Windows).
+- [B] UI follows `DESIGN.md` (warm dark canvas, Inter + DM Mono, Instrument Serif italic accents, 3-4px radii, hairlines, no shadows). One deliberate exception: verdict chips use muted green/red/amber tints, because six verdicts can't be told apart in off-white alone.
+- [B] Scoring: a turn's cited link earns +5 / −10 **once per turn**, not once per claim. **A: set `citedUrlCheck` on the claim(s) the link relates to; only the first one per turn is scored.**
+- [B] One investigation per claim, keyed by `claimId`. `startChallenge` stores a queued placeholder immediately (reserves the challenge), and A's first `emit` replaces it. **A: `investigate()` must keep `claimId` on every emitted Investigation.**
+- [B] A failed/skipped_budget investigation refunds the challenge. If the pipeline throws, the route settles the turn's claims as `unverifiable`.
 
 - Stack: Next.js + TS + Tailwind, Gemini for the LLM, 2-tab polling, run locally (no Vercel).
 - TinyAgent is used for Challenges (+ optional AUTO_ESCALATE), with a narrow portal map to keep step counts low.
@@ -120,3 +126,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - 13:14 [A] completed A0.1 - A0.4 (scaffold, deps, lib/types.ts, .env.example, scripts/smoke.ts) · next: Member B begins B0.1/B0.2, Member A begins Phase 1 (lib/tinyfish.ts) · pushed scaffold to main
 - [B] did B0.3 demo script (nuclear vs fossil topic) · next: B0.2, then B1.x · DESIGN.md is the UI style guide (warm dark canvas, Inter/DM Mono, no accent colour)
 - [B] did B0.2; disabled `cacheComponents`/`partialPrefetching`/`agentRules` in next.config.ts (shared file, A: pull main) · next: B1.x on b/p1-rooms
+- [B] did B1.1-B1.6 + B2.2/2.3/2.4 + B3.1/3.2 against the mock pipeline (store, scoring, API routes, landing, room page, claim cards, Investigator card, winner screen). Tested a full 3-round game and a challenge in two real browsers · next: merge to main, then B2.1 once A's pipeline lands · `lib/pipeline/index.ts` is a mock-only stub: A, replace it when `check.ts`/`investigate.ts` exist (export real when `PIPELINE=real`)

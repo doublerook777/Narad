@@ -39,6 +39,7 @@ export function scoreRoom(room: Room): Room {
   const prevAt = new Map(room.events.map((e) => [e.id, e.at]));
   const events: ScoreEvent[] = [];
   const supportedInTurn = new Map<string, number>();
+  const citedTurns = new Set<string>(); // a cited link is judged once per turn, not once per claim
   const push = (id: string, e: Omit<ScoreEvent, "id" | "at">) =>
     events.push({ id, at: prevAt.get(id) ?? Date.now(), ...e });
 
@@ -51,8 +52,12 @@ export function scoreRoom(room: Room): Room {
       base = n < 3 ? BASE.supported : SUPPORTED_AFTER_THREE;
     }
     let pts = Math.round(base * clamp(claim.relevance || 1, 0.5, 1));
-    if (claim.citedUrlCheck === "matches") pts += CITE_MATCH;
-    if (claim.citedUrlCheck === "misrepresented") pts += CITE_MISREPRESENTED;
+    if (claim.citedUrlCheck === "matches" || claim.citedUrlCheck === "misrepresented") {
+      if (!citedTurns.has(claim.turnId)) {
+        citedTurns.add(claim.turnId);
+        pts += claim.citedUrlCheck === "matches" ? CITE_MATCH : CITE_MISREPRESENTED;
+      }
+    }
     claim.points = pts || 0;
     if (claim.points !== 0) {
       push(`claim:${claim.id}`, {

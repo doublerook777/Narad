@@ -1,26 +1,65 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Tokens from DESIGN.md: warm dark canvas, off-white ink, hairline borders, tight radii. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: #2b2622;
+  --color-canvas-soft: #383330;
+  --color-hairline: #3f3a36;
+  --color-ink: #f7f5f0;
+  --color-primary: #f7f5f0;
+  --color-on-primary: #2b2622;
+  --color-body: #c9c0ad;
+  --color-body-strong: #dad2c1;
+  --color-mute: #aea69c;
+  /* Verdict-only tints: muted and warm, the one deliberate exception to "no chromatic accent". */
+  --color-ok: #a3c9a0;
+  --color-bad: #e49a8b;
+  --color-warn: #e2bd7c;
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: var(--font-instrument), Georgia, "Times New Roman", serif;
+
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html { background: var(--color-canvas); }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  -webkit-font-smoothing: antialiased;
 }
+::selection { background: var(--color-primary); color: var(--color-on-primary); }
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2 text-sm font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-40;
+}
+@utility btn-primary {
+  @apply btn bg-primary text-on-primary hover:opacity-90;
+}
+@utility btn-ghost {
+  @apply btn bg-transparent text-ink hover:bg-canvas-soft;
+}
+@utility btn-outline {
+  @apply btn border border-hairline bg-transparent text-ink hover:bg-canvas-soft;
+}
+@utility card {
+  @apply rounded-md border border-hairline bg-canvas-soft;
+}
+@utility input {
+  @apply w-full rounded-sm border border-hairline bg-canvas-soft px-3 py-2 text-sm text-ink placeholder:text-mute focus:border-mute focus:outline-none;
+}
+@utility eyebrow {
+  @apply font-mono text-xs uppercase tracking-wider text-mute;
+}
+@utility chip {
+  @apply inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-xs;
+}
+
+@keyframes pulse-row { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+.pulse { animation: pulse-row 1.4s ease-in-out infinite; }
