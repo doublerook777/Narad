@@ -45,10 +45,18 @@ export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Pr
   const claims: Claim[] = sentences(turn.text)
     .slice(0, MAX_CLAIMS_PER_TURN)
     .map((text) => ({
-      id: nanoid(8), turnId: turn.id, player: turn.player, text,
+      id: nanoid(8),
+      turnId: turn.id,
+      player: turn.player,
+      text,
       kind: OPINION.test(text) ? "opinion" : "factual",
-      status: "queued", verdict: "pending", confidence: 0, relevance: 1,
-      explanation: "", evidence: [], points: 0,
+      status: "queued",
+      verdict: "pending",
+      confidence: 0,
+      relevance: 1,
+      explanation: "",
+      evidence: [],
+      points: 0,
       citedUrl: turn.citedUrl,
     }));
 
@@ -57,15 +65,21 @@ export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Pr
 
   await Promise.all(
     claims.map(async (c) => {
-      const set = (patch: Partial<Claim>) => { Object.assign(c, patch); emit({ ...c, evidence: [...c.evidence] }); };
+      const set = (patch: Partial<Claim>) => {
+        Object.assign(c, patch);
+        emit({ ...c, evidence: [...c.evidence] });
+      };
       if (c.kind === "opinion") {
         await sleep(jitter(300));
         set({ status: "done", verdict: "opinion", explanation: "An opinion, not a checkable fact." });
         return;
       }
-      set({ status: "searching" }); await sleep(jitter(800));
-      set({ status: "fetching" }); await sleep(jitter(900));
-      set({ status: "judging" }); await sleep(jitter(700));
+      set({ status: "searching" });
+      await sleep(jitter(800));
+      set({ status: "fetching" });
+      await sleep(jitter(900));
+      set({ status: "judging" });
+      await sleep(jitter(700));
       const verdict = verdictFor(c.text);
       const explanation = {
         supported: "Matches what the sources say.",
@@ -74,27 +88,39 @@ export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Pr
         unverifiable: "No reliable source found either way.",
       }[verdict as "supported" | "refuted" | "misleading" | "unverifiable"];
       set({
-        status: "receipt", verdict, explanation, confidence: 0.8,
+        status: "receipt",
+        verdict,
+        explanation,
+        confidence: 0.8,
         relevance: 0.7 + Math.random() * 0.3,
         evidence: verdict === "unverifiable" ? [] : fakeEvidence(),
         citedUrlCheck: c.citedUrl ? (verdict === "supported" ? "matches" : "misrepresented") : undefined,
       });
       await sleep(jitter(700));
       set({ status: "done" });
-    }),
+    })
   );
   return claims;
 }
 
 export async function investigate(
-  claim: Claim, requestedBy: PlayerSlot | "auto", emit: (i: Investigation) => void,
+  claim: Claim,
+  requestedBy: PlayerSlot | "auto",
+  emit: (i: Investigation) => void
 ): Promise<Investigation> {
   const inv: Investigation = {
-    id: nanoid(8), claimId: claim.id, requestedBy, status: "queued",
+    id: nanoid(8),
+    claimId: claim.id,
+    requestedBy,
+    status: "queued",
     portalUrl: "https://ourworldindata.org/grapher/death-rates-from-energy-production-per-twh",
-    goal: `Find the real figure behind: "${claim.text}"`, steps: [],
+    goal: `Find the real figure behind: "${claim.text}"`,
+    steps: [],
   };
-  const set = (patch: Partial<Investigation>) => { Object.assign(inv, patch); emit({ ...inv, steps: [...inv.steps] }); };
+  const set = (patch: Partial<Investigation>) => {
+    Object.assign(inv, patch);
+    emit({ ...inv, steps: [...inv.steps] });
+  };
   set({});
   await sleep(1200);
   set({ status: "running" });
@@ -112,8 +138,18 @@ export async function investigate(
   set({
     status: "done",
     result: refuted
-      ? { verdict: "refuted", foundValue: "Coal 24.6 vs nuclear 0.03 deaths per TWh", sourceUrl: inv.portalUrl, explanation: "Coal is hundreds of times deadlier than nuclear, not the other way round." }
-      : { verdict: "supported", foundValue: "Coal 24.6 vs nuclear 0.03 deaths per TWh", sourceUrl: inv.portalUrl, explanation: "The chart backs up the claim." },
+      ? {
+          verdict: "refuted",
+          foundValue: "Coal 24.6 vs nuclear 0.03 deaths per TWh",
+          sourceUrl: inv.portalUrl,
+          explanation: "Coal is hundreds of times deadlier than nuclear, not the other way round.",
+        }
+      : {
+          verdict: "supported",
+          foundValue: "Coal 24.6 vs nuclear 0.03 deaths per TWh",
+          sourceUrl: inv.portalUrl,
+          explanation: "The chart backs up the claim.",
+        },
   });
   return inv;
 }
