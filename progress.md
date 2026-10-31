@@ -25,8 +25,8 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 ## Member A: Pipeline / Backend
 
 **Branch:** `a/p1-core`
-**Now working on:** Phase 1 complete (A1.1 - A1.6)
-**Half-done / where I stopped:** Checkpoint 1 verification ready
+**Now working on:** Phase 2 complete (A2.1 - A2.4)
+**Half-done / where I stopped:** Checkpoint 2 reached for Member A
 **Blocked by:** —
 
 - [x] A0.1 Scaffold Next.js
@@ -39,10 +39,10 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 - [x] A1.4 `extract.ts`
 - [x] A1.5 `verify.ts`
 - [x] A1.6 `check.ts` + CLI
-- [ ] A2.1 `receipt.ts` (Browser)
-- [ ] A2.2 `lib/budget.ts`
-- [ ] A2.3 Portal map
-- [ ] A2.4 `investigate.ts` (Agent)
+- [x] A2.1 `receipt.ts` (Browser)
+- [x] A2.2 `lib/budget.ts`
+- [x] A2.3 Portal map
+- [x] A2.4 `investigate.ts` (Agent)
 - [ ] A3.1 Hardening
 - [ ] A3.2 AUTO_ESCALATE
 - [ ] A3.3 `/api/health`
@@ -115,3 +115,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 
 - 13:14 [A] completed A0.1 - A0.4 (scaffold, deps, lib/types.ts, .env.example, scripts/smoke.ts) · next: Member B begins B0.1/B0.2, Member A begins Phase 1 (lib/tinyfish.ts) · pushed scaffold to main
 - 13:22 [A] completed A1.1 - A1.6 on branch a/p1-core (lib/tinyfish.ts, lib/gemini.ts, lib/cache.ts, lib/sources.ts, extract.ts, verify.ts, check.ts, scripts/check.ts) · tsc passed · degraded gracefully to unverifiable without keys · next: Phase 2 (receipt.ts, budget.ts, investigate.ts)
+- 13:28 [A] completed A2.1 - A2.4 on branch a/p1-core (receipt.ts warm browser highlight/screenshot, budget.ts ledger guard, portal map indicators, investigate.ts TinyAgent live streaming + result extraction) · tsc passed · ready for Phase 3

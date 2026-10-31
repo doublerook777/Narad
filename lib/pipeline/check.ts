@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { extractClaims } from "./extract";
 import { verifyClaim } from "./verify";
+import { captureReceipt } from "./receipt";
 import type { CheckInput, Claim } from "../types";
 
 export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Promise<Claim[]> {
@@ -62,6 +63,29 @@ export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Pr
         claim.explanation = result.explanation;
         claim.evidence = result.evidence;
         claim.citedUrlCheck = result.citedUrlCheck;
+
+        // Phase 2: If supported or refuted, capture receipt screenshot
+        const isSupportedOrRefuted = claim.verdict === "supported" || claim.verdict === "refuted";
+        const primaryEvidence = claim.evidence?.[0];
+
+        if (isSupportedOrRefuted && primaryEvidence?.url) {
+          claim.status = "receipt";
+          emit(claim);
+
+          try {
+            const receiptId = await captureReceipt({
+              id: claim.id,
+              url: primaryEvidence.url,
+              quote: primaryEvidence.quote,
+            });
+            if (receiptId) {
+              claim.receiptId = receiptId;
+            }
+          } catch (receiptErr) {
+            console.warn(`[checkTurn] receipt capture skipped for ${claim.id}:`, receiptErr);
+          }
+        }
+
         claim.status = "done";
         emit(claim);
       } catch (err) {
