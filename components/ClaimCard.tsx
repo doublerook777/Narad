@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { post } from "@/lib/client";
 import type { Claim, ClaimStatus, PlayerSlot, Room, Verdict } from "@/lib/types";
-import { effectiveVerdict } from "@/lib/scoring";
+import { effectiveVerdict, isUnsupportedStat } from "@/lib/scoring";
 import InvestigatorCard from "./InvestigatorCard";
 
 const VERDICT: Record<Verdict, { label: string; cls: string }> = {
@@ -63,6 +63,7 @@ export default function ClaimCard({ claim, room, code, me }: Props) {
 
       {working && <p className="pulse mt-2 font-mono text-xs text-mute">{STAGE[claim.status]}…</p>}
       {claim.explanation && <p className="mt-2 text-sm text-body">{claim.explanation}</p>}
+      {isUnsupportedStat(claim, verdict) && <p className="mt-1 text-xs text-warn">No source backs up this number, so it counts as an unsupported statistic.</p>}
       {claim.citedUrlCheck && <p className="mt-1 text-xs text-mute">{CITE[claim.citedUrlCheck]}</p>}
 
       {(claim.evidence.length > 0 || claim.receiptId) && (

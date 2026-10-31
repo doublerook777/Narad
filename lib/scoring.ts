@@ -17,11 +17,26 @@ const CITE_MATCH = 5;
 const CITE_MISREPRESENTED = -10;
 const CHALLENGE_WIN = 10;
 const CHALLENGE_LOSS = -5;
+const UNSUPPORTED_STAT = -5;
 const OFF_TOPIC = -20;
 const WRONG_SIDE = -5;
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const hasResult = (i: Investigation) => (i.status === "done" || i.status === "cached") && !!i.result;
+
+/** A specific figure: a digit (bare years like 1986 don't count) or a magnitude word like "million". */
+export function hasSpecificFigure(text: string): boolean {
+  const noYears = text.replace(/\b(1[0-9]{3}|20[0-9]{2})\b/g, " ");
+  return /\d/.test(noYears) || /\b(thousand|million|billion|trillion)s?\b/i.test(noYears);
+}
+
+/**
+ * A factual claim built on a specific number that no source backed up ("AI doom is 68%").
+ * Only counts when the fact-checker really ran (confidence > 0), so an outage or search failure never costs points.
+ */
+export function isUnsupportedStat(claim: Claim, verdict: Verdict): boolean {
+  return claim.kind === "factual" && verdict === "unverifiable" && claim.status === "done" && claim.confidence > 0 && hasSpecificFigure(claim.text);
+}
 
 export function investigationFor(room: Room, claim: Claim): Investigation | undefined {
   return room.investigations.find((i) => i.claimId === claim.id);
@@ -53,6 +68,7 @@ export function scoreRoom(room: Room): Room {
       supportedInTurn.set(claim.turnId, n + 1);
       base = n < 3 ? BASE.supported : SUPPORTED_AFTER_THREE;
     }
+    if (isUnsupportedStat(claim, verdict)) base = UNSUPPORTED_STAT;
     let pts = Math.round(base * clamp(claim.relevance || 1, 0.5, 1));
     if (claim.citedUrlCheck === "matches" || claim.citedUrlCheck === "misrepresented") {
       if (!citedTurns.has(claim.turnId)) {

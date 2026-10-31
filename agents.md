@@ -205,6 +205,7 @@ Auth: header `X-API-Key: $TINYFISH_API_KEY` (the SDK does this). Full docs: http
 | Refuted claim | **−15** |
 | Misleading | **−5** |
 | Unverifiable / opinion | 0 |
+| Unverifiable **factual claim with a specific number** (digits or "million" etc., bare years excluded) that no source backed up, and the checker really ran (`confidence > 0`) | **−5** ("unsupported statistic"); a successful Challenge that finds the real figure overrides it |
 | Cited URL backs the claim (`citedUrlCheck: "matches"`) | **+5** |
 | Cited URL misrepresented | **−10** |
 | Challenge succeeds (investigation verdict refuted/misleading) | challenger **+10**; the claim is re-scored with the new verdict |
