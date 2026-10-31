@@ -1,21 +1,60 @@
 import { customAlphabet, nanoid } from "nanoid";
 import type { Claim, Investigation, PlayerSlot, Room, Turn } from "./types";
 import { scoreRoom } from "./scoring";
+import type { LobbyRoom } from "./lobby-types";
 import { CHALLENGES_PER_PLAYER, FINISH_GRACE_SECONDS, MAX_CHARS, STALL_GRACE_SECONDS, clampTurnSeconds } from "./constants";
 
 // In-memory rooms. Kept on globalThis because Next dev hot-reload re-imports modules.
 const g = globalThis as unknown as {
   __naradRooms?: Map<string, Room>;
   __naradWork?: Map<string, number>;
+  __naradSeen?: Map<string, Partial<Record<PlayerSlot, number>>>;
 };
 const rooms = (g.__naradRooms ??= new Map<string, Room>());
 const work = (g.__naradWork ??= new Map<string, number>()); // in-flight pipeline jobs per room
 
+const seen = (g.__naradSeen ??= new Map<string, Partial<Record<PlayerSlot, number>>>()); // last poll per seat
+const ONLINE_MS = 8_000;        // a seat counts as "in the room" if it polled this recently
+const LOBBY_GRACE_MS = 60_000;  // an empty room stays listed this long before it disappears
 const makeCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ", 4);
 const player = (slot: PlayerSlot, name: string) => ({ slot, name, score: 0, challengesLeft: CHALLENGES_PER_PLAYER });
 const other = (s: PlayerSlot): PlayerSlot => (s === "p1" ? "p2" : "p1");
 
 type Fail = { ok: false; error: string };
+
+/** Called on every poll from a seated player: this is how we know who is actually in the room. */
+export function touch(code: string, slot: PlayerSlot) {
+  const key = code.toUpperCase();
+  seen.set(key, { ...seen.get(key), [slot]: Date.now() });
+}
+
+export function onlineCount(room: Room): number {
+  const s = seen.get(room.code) ?? {};
+  const now = Date.now();
+  return (["p1", "p2"] as const).filter((k) => room.players[k] && now - (s[k] ?? 0) < ONLINE_MS).length;
+}
+
+
+/** Public rooms for the home page. Finished rooms and rooms nobody has touched for a while are left out. */
+export function listPublicRooms(): LobbyRoom[] {
+  const now = Date.now();
+  const rows: (LobbyRoom & { active: number })[] = [];
+  for (const room of rooms.values()) {
+    if (!room.isPublic || room.status === "finished") continue;
+    const s = seen.get(room.code) ?? {};
+    const last = Math.max(0, ...Object.values(s).map((v) => v ?? 0));
+    const online = onlineCount(room);
+    if (online === 0 && now - last > LOBBY_GRACE_MS) continue;
+    rows.push({
+      code: room.code, topic: room.topic, host: room.players.p1?.name ?? "Player 1", online,
+      seatOpen: !room.players.p2, status: room.status, turnSeconds: room.turnSeconds,
+      round: room.round, maxRounds: room.maxRounds, active: last,
+    });
+  }
+  // joinable rooms first, then the busiest / most recent
+  rows.sort((a, b) => Number(b.seatOpen) - Number(a.seatOpen) || b.online - a.online || b.active - a.active);
+  return rows.map((r) => { const { active, ...row } = r; void active; return row; });
+}
 
 export function getRoom(code: string): Room | undefined {
   return rooms.get(code.toUpperCase());
@@ -42,6 +81,7 @@ export function createRoom(topic: string, name: string, opts: { isPublic?: boole
     turns: [], claims: [], investigations: [], events: [], version: 1,
   };
   rooms.set(code, room);
+  touch(code, "p1"); // the creator is in the room from the start
   return room;
 }
 

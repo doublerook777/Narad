@@ -22,6 +22,9 @@ const CITE: Record<NonNullable<Claim["citedUrlCheck"]>, string> = {
   unreadable: "Cited source could not be read",
 };
 
+// The pipeline can return the same page twice; React keys (and readers) want each source once.
+const uniqueByUrl = <T extends { url: string }>(items: T[]) => items.filter((e, i) => items.findIndex((x) => x.url === e.url) === i);
+
 interface Props { claim: Claim; room: Room; code: string; me: PlayerSlot | null }
 
 export default function ClaimCard({ claim, room, code, me }: Props) {
@@ -72,8 +75,8 @@ export default function ClaimCard({ claim, room, code, me }: Props) {
             </button>
           )}
           <ul className="min-w-0 flex-1 space-y-2">
-            {claim.evidence.slice(0, 2).map((e) => (
-              <li key={e.url} className="text-xs">
+            {uniqueByUrl(claim.evidence).slice(0, 2).map((e, i) => (
+              <li key={`${e.url}-${i}`} className="text-xs">
                 <a href={e.url} target="_blank" rel="noreferrer" className="font-medium text-body-strong underline underline-offset-2 hover:text-ink">
                   {e.domain}
                 </a>

@@ -1,6 +1,8 @@
 import type { PlayerSlot, Room } from "./types";
 
 export type RoomView = Room & { serverTime: number };
+export const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
 export interface Seat { slot: PlayerSlot; name: string }
 
 export const seatKey = (code: string) => `narad:${code.toUpperCase()}`;

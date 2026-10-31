@@ -4,11 +4,13 @@ import { MAX_CHARS } from "@/lib/constants";
 import { post } from "@/lib/client";
 import type { PlayerSlot } from "@/lib/types";
 
-interface Props { code: string; slot: PlayerSlot; turnKey: string; remainingMs: number; round: number; maxRounds: number }
+interface Props { code: string; slot: PlayerSlot; turnKey: string; remainingMs: number; totalSeconds: number }
 
-export default function ArgumentBox({ code, slot, turnKey, remainingMs, round, maxRounds }: Props) {
+/** The message box pinned to the bottom of the screen, like a chat app. */
+export default function ArgumentBox({ code, slot, turnKey, remainingMs, totalSeconds }: Props) {
   const [text, setText] = useState("");
   const [cite, setCite] = useState("");
+  const [showCite, setShowCite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const sent = useRef<string>("");
@@ -20,7 +22,7 @@ export default function ArgumentBox({ code, slot, turnKey, remainingMs, round, m
     setBusy(true); setError("");
     const { ok, data } = await post(`/api/rooms/${code}/turn`, { slot, text, citedUrl: cite || undefined, timedOut });
     setBusy(false);
-    if (ok) { setText(""); setCite(""); }
+    if (ok) { setText(""); setCite(""); setShowCite(false); }
     else { sent.current = ""; setError(data.error ?? "Could not submit."); }
   }
 
@@ -32,37 +34,44 @@ export default function ArgumentBox({ code, slot, turnKey, remainingMs, round, m
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remainingMs <= 0, turnKey]);
 
-  const left = MAX_CHARS - text.length;
+  const s = Math.max(0, Math.ceil(remainingMs / 1000));
+  const pct = Math.min(100, Math.max(0, (remainingMs / (totalSeconds * 1000)) * 100));
+  const low = s <= 10;
   return (
-    <div className="card p-6">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-2xl font-medium tracking-tight">Your turn</h2>
-        <span className="eyebrow">Round {round} of {maxRounds}</span>
+    <div className="sticky bottom-0 z-30 -mx-6 border-t border-hairline bg-canvas px-6 pb-4 pt-3 lg:mx-0 lg:px-0">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-hairline">
+        <div className={`h-1 rounded-full ${low ? "bg-bad" : "bg-primary"}`} style={{ width: `${pct}%`, transition: "width 1s linear" }} />
       </div>
-      <p className="mt-1 text-sm text-body">Make your case. Every factual claim gets checked against real sources.</p>
-      <textarea
-        className="input mt-4 h-36 resize-none text-base leading-6"
-        placeholder="e.g. Coal causes roughly 24 deaths per terawatt-hour, while nuclear causes about 0.03."
-        maxLength={MAX_CHARS}
-        value={text}
-        disabled={busy}
-        onChange={(e) => setText(e.target.value)}
-        autoFocus
-      />
-      <div className="mt-1 text-right font-mono text-xs text-mute tabular-nums">{left} left</div>
-      <input
-        className="input mt-2"
-        placeholder="Source link you're citing (optional, +5 if it backs you up, −10 if it doesn't)"
-        value={cite}
-        disabled={busy}
-        onChange={(e) => setCite(e.target.value)}
-      />
-      {error && <p className="mt-3 text-sm text-bad">{error}</p>}
-      <div className="mt-4 flex justify-end">
-        <button className="btn-primary" disabled={busy || !text.trim()} onClick={() => submit()}>
-          {busy ? "Submitting…" : "Submit argument"}
-        </button>
+      <div className="mt-3 flex items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <textarea
+            className="input h-24 resize-none text-base leading-6"
+            placeholder="Make your case. Every factual claim gets checked…"
+            maxLength={MAX_CHARS}
+            value={text}
+            disabled={busy}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit(); }}
+            autoFocus
+          />
+          {showCite && (
+            <input
+              className="input mt-2"
+              placeholder="Link to the source you're citing (+5 if it backs you up, −10 if it doesn't)"
+              value={cite} disabled={busy} onChange={(e) => setCite(e.target.value)}
+            />
+          )}
+          <div className="mt-1 flex items-center justify-between text-xs text-mute">
+            <button className="underline underline-offset-2 hover:text-ink" onClick={() => setShowCite((v) => !v)}>{showCite ? "Remove source link" : "Cite a source"}</button>
+            <span className="font-mono tabular-nums">{MAX_CHARS - text.length} left · Ctrl+Enter to send</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className={`font-mono text-2xl tabular-nums ${low ? "pulse text-bad" : "text-ink"}`}>{Math.floor(s / 60)}:{String(s % 60).padStart(2, "0")}</span>
+          <button className="btn-primary" disabled={busy || !text.trim()} onClick={() => submit()}>{busy ? "Sending…" : "Send"}</button>
+        </div>
       </div>
+      {error && <p className="mt-2 text-sm text-bad">{error}</p>}
     </div>
   );
 }

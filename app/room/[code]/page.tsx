@@ -1,14 +1,13 @@
 "use client";
 import Link from "next/link";
-import { use, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import ArgumentBox from "@/components/ArgumentBox";
+import Chat from "@/components/Chat";
 import EventFeed from "@/components/EventFeed";
-import Scoreboard from "@/components/Scoreboard";
-import Timer from "@/components/Timer";
-import TurnList from "@/components/TurnList";
-import { post, saveSeat, seatKey, type RoomView, type Seat } from "@/lib/client";
+import VersusBar from "@/components/VersusBar";
+import { fmtTime, post, saveSeat, seatKey, type RoomView, type Seat } from "@/lib/client";
 import { POLL_MS } from "@/lib/constants";
-import { winner } from "@/lib/scoring";
+import type { PlayerSlot } from "@/lib/types";
 
 export default function RoomPage({ params }: { params: Promise<{ code: string }> }) {
   const code = use(params).code.toUpperCase();
@@ -31,14 +30,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     try { return storedSeat ? JSON.parse(storedSeat) : null; } catch { return null; }
   }, [seatOverride, storedSeat]);
   const name = typedName ?? pendingName;
-  const setName = setTypedName;
+
+  const me: PlayerSlot | null = seat && room?.players[seat.slot] ? seat.slot : null;
+  // Polls tell the server which seat is ours, so the lobby can show who is actually in the room.
+  const meRef = useRef<PlayerSlot | null>(null);
+  useEffect(() => { meRef.current = me; }, [me]);
 
   // Poll the room every 1.5s.
   useEffect(() => {
     let stop = false;
     async function tick() {
       try {
-        const res = await fetch(`/api/rooms/${code}`, { cache: "no-store" });
+        const as = meRef.current ?? (seat?.slot ?? "");
+        const res = await fetch(`/api/rooms/${code}${as ? `?as=${as}` : ""}`, { cache: "no-store" });
         if (res.status === 404) { if (!stop) setMissing(true); return; }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: RoomView = await res.json();
@@ -53,7 +57,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     void tick();
     const id = setInterval(tick, POLL_MS);
     return () => { stop = true; clearInterval(id); };
-  }, [code]);
+  }, [code, seat?.slot]);
 
   // Local clock for the countdown.
   useEffect(() => {
@@ -85,92 +89,98 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     return <Shell><p className="pulse mt-24 text-center font-mono text-sm text-mute">Loading room {code}…</p></Shell>;
   }
 
-  const me = seat && room.players[seat.slot] ? seat.slot : null;
   const serverNow = now + skew;
   const remaining = room.turnDeadline - serverNow;
   const myTurn = room.status === "active" && me === room.currentPlayer;
   const canJoin = !me && !room.players.p2;
-  const turnKey = String(room.turns.length);
-  const inviteLink = `${typeof location === "undefined" ? "" : location.origin}/room/${room.code}`;
-  const who = room.players[room.currentPlayer]?.name ?? room.currentPlayer;
+  const inviteLink = `${location.origin}/room/${room.code}`;
 
   return (
-    <Shell
-      banner={failures >= 2 ? "Connection lost. Retrying… your game is safe on the server." : undefined}
-      right={
-        room.status === "active" ? <Timer remainingMs={remaining} totalSeconds={room.turnSeconds} label={myTurn ? "Your time" : `${who}'s time`} />
-        : room.status === "finishing" ? <Timer remainingMs={remaining} label="Final checks" /> : null
-      }
-    >
-      <div className="grid gap-6 py-8 lg:grid-cols-[1fr_340px]">
-        <div className="min-w-0 space-y-6">
-          <div>
-            <div className="eyebrow">Topic · Room {room.code}</div>
-            <h1 className="mt-1 text-3xl font-medium leading-9 tracking-[-0.02em]">{room.topic}</h1>
-          </div>
+    <Shell banner={failures >= 2 ? "Connection lost. Retrying… your game is safe on the server." : undefined}>
+      {room.status !== "waiting" && <VersusBar room={room} me={me} remainingMs={remaining} />}
 
-          {room.status === "waiting" && (
-            canJoin ? (
-              <div className="card p-6">
-                <h2 className="text-2xl font-medium tracking-tight">Join this debate</h2>
-                <p className="mt-1 text-sm text-body">{room.players.p1?.name} is waiting for an opponent.</p>
-                <input className="input mt-4" placeholder="Your name" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && join()} />
-                {joinError && <p className="mt-2 text-sm text-bad">{joinError}</p>}
-                <button className="btn-primary mt-4" onClick={join}>Join as Player 2</button>
-              </div>
-            ) : (
-              <div className="card p-8 text-center">
-                <p className="font-serif text-3xl italic text-body-strong">Waiting for an opponent…</p>
-                <p className="mt-2 text-sm text-body">Share this code, or open the link in a second tab.</p>
-                <div className="mt-5 font-mono text-5xl tracking-[0.3em]">{room.code}</div>
-                <button
-                  className="btn-outline mt-5"
-                  onClick={() => { copyText(inviteLink); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-                >
-                  {copied ? "Link copied" : "Copy invite link"}
-                </button>
-                <input
-                  readOnly
-                  value={inviteLink}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="input mx-auto mt-3 max-w-sm text-center font-mono text-xs"
-                  aria-label="Invite link"
-                />
-              </div>
-            )
+      <div className="grid gap-6 py-6 lg:grid-cols-[1fr_300px]">
+        <div className="min-w-0">
+          {room.status === "waiting" ? (
+            <Lobby
+              room={room} canJoin={canJoin} name={name} setName={setTypedName} join={join} joinError={joinError}
+              inviteLink={inviteLink} copied={copied}
+              onCopy={() => { copyText(inviteLink); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+            />
+          ) : (
+            <>
+              <Chat room={room} code={code} me={me} now={serverNow} />
+
+              {room.status === "finishing" && (
+                <div className="card mt-6 p-5 text-center">
+                  <p className="pulse font-serif text-2xl italic text-body-strong">Final fact-checks are coming in…</p>
+                  <p className="mt-1 text-sm text-body">The winner is announced once the last claims are judged.</p>
+                </div>
+              )}
+              {room.status === "finished" && <Winner room={room} me={me} />}
+
+              {myTurn && (
+                <div className="mt-8">
+                  <ArgumentBox code={code} slot={me!} turnKey={String(room.turns.length)} remainingMs={remaining} totalSeconds={room.turnSeconds} />
+                </div>
+              )}
+              {room.status === "active" && !me && <p className="mt-8 text-center text-sm text-mute">You&apos;re watching this debate.</p>}
+            </>
           )}
-
-          {room.status === "active" && (
-            myTurn ? (
-              <ArgumentBox code={code} slot={me!} turnKey={turnKey} remainingMs={remaining} round={room.round} maxRounds={room.maxRounds} />
-            ) : (
-              <div className="card p-6">
-                <p className="pulse font-serif text-3xl italic text-body-strong">{who} is making their case…</p>
-                <p className="mt-1 text-sm text-body">
-                  {me ? "Look over their last claims. You can Challenge any of them below." : "You're watching this debate."}
-                </p>
-              </div>
-            )
-          )}
-
-          {room.status === "finishing" && (
-            <div className="card p-6">
-              <p className="pulse font-serif text-3xl italic text-body-strong">Final fact-checks are coming in…</p>
-              <p className="mt-1 text-sm text-body">The winner is announced once the last claims are judged.</p>
-            </div>
-          )}
-
-          {room.status === "finished" && <Winner room={room} me={me} />}
-
-          {room.status !== "waiting" && <TurnList room={room} code={code} me={me} now={serverNow} />}
         </div>
 
-        <aside className="order-first space-y-4 lg:sticky lg:top-6 lg:order-none lg:self-start">
-          <Scoreboard room={room} me={me} />
-          {room.status !== "waiting" && <div className="hidden lg:block"><EventFeed room={room} /></div>}
+        <aside className="hidden space-y-4 lg:sticky lg:top-56 lg:block lg:self-start">
+          <div className="card p-4">
+            <div className="eyebrow">Room {room.code}</div>
+            <dl className="mt-2 space-y-1 text-sm">
+              <div className="flex justify-between"><dt className="text-mute">Time per turn</dt><dd className="font-mono tabular-nums">{fmtTime(room.turnSeconds)}</dd></div>
+              <div className="flex justify-between"><dt className="text-mute">Rounds</dt><dd className="font-mono tabular-nums">{room.round} / {room.maxRounds}</dd></div>
+              <div className="flex justify-between"><dt className="text-mute">Visibility</dt><dd>{room.isPublic ? "Public" : "Private"}</dd></div>
+            </dl>
+          </div>
+          {room.status !== "waiting" && <EventFeed room={room} />}
         </aside>
       </div>
     </Shell>
+  );
+}
+
+function Lobby(props: {
+  room: RoomView; canJoin: boolean; name: string; setName: (s: string) => void; join: () => void;
+  joinError: string; inviteLink: string; copied: boolean; onCopy: () => void;
+}) {
+  const { room, canJoin, name, setName, join, joinError, inviteLink, copied, onCopy } = props;
+  return (
+    <div className="mx-auto max-w-xl space-y-6 pt-8">
+      <div className="text-center">
+        <div className="eyebrow">The motion</div>
+        <h1 className="mt-1 font-serif text-4xl italic leading-10">{room.topic}</h1>
+        <p className="mt-3 text-sm text-body">
+          <span className="font-mono">{fmtTime(room.turnSeconds)}</span> per turn · 3 rounds each · {room.isPublic ? "listed in Open rooms" : "private room"}
+        </p>
+      </div>
+
+      {canJoin ? (
+        <div className="card p-6">
+          <h2 className="text-2xl font-medium tracking-tight">Join this debate</h2>
+          <p className="mt-1 text-sm text-body">{room.players.p1?.name} is waiting for an opponent.</p>
+          <input className="input mt-4" placeholder="Your name" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && join()} autoFocus />
+          {joinError && <p className="mt-2 text-sm text-bad">{joinError}</p>}
+          <button className="btn-primary mt-4" onClick={join}>Join as Player 2</button>
+        </div>
+      ) : (
+        <div className="card p-8 text-center">
+          <p className="pulse font-serif text-3xl italic text-body-strong">Waiting for an opponent…</p>
+          <p className="mt-2 text-sm text-body">{room.isPublic ? "Your room is listed on the home page. You can also share the code." : "Share this code or link, since the room is private."}</p>
+          <div className="mt-5 font-mono text-5xl tracking-[0.3em]">{room.code}</div>
+          <button className="btn-outline mt-5" onClick={onCopy}>{copied ? "Link copied" : "Copy invite link"}</button>
+          <input
+            readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()}
+            className="input mx-auto mt-3 max-w-sm text-center font-mono text-xs" aria-label="Invite link"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -189,36 +199,31 @@ function copyText(text: string) {
   document.body.removeChild(ta);
 }
 
-function Winner({ room, me }: { room: RoomView; me: "p1" | "p2" | null }) {
-  const w = winner(room);
+function Winner({ room, me }: { room: RoomView; me: PlayerSlot | null }) {
   const p1 = room.players.p1, p2 = room.players.p2;
-  const title = w === "tie" ? "A draw." : `${room.players[w]?.name} wins.`;
-  const youWon = me && w === me;
+  const a = p1?.score ?? 0, b = p2?.score ?? 0;
+  const w = a === b ? null : a > b ? p1 : p2;
   return (
-    <div className="card p-8 text-center">
+    <div className="card mt-8 p-8 text-center">
       <div className="eyebrow">Game over</div>
-      <h2 className="mt-2 font-serif text-6xl italic tracking-tight">{title}</h2>
-      <p className="mt-3 font-mono text-lg tabular-nums text-body">
-        {p1?.name} {p1?.score} · {p2?.score} {p2?.name}
-      </p>
-      <p className="mt-2 text-sm text-mute">{youWon ? "Being right paid off." : "Scroll down for every claim and its proof."}</p>
+      <h2 className="mt-2 font-serif text-6xl italic tracking-tight">{w ? `${w.name} wins.` : "A draw."}</h2>
+      <p className="mt-3 font-mono text-lg tabular-nums text-body">{p1?.name} {a} · {b} {p2?.name}</p>
+      <p className="mt-2 text-sm text-mute">{w && me === w.slot ? "Being right paid off." : "Scroll up for every claim and its proof."}</p>
       <Link href="/" className="btn-outline mt-6">New debate</Link>
     </div>
   );
 }
 
-function Shell({ children, right, banner }: { children: React.ReactNode; right?: React.ReactNode; banner?: string }) {
+function Shell({ children, banner }: { children: React.ReactNode; banner?: string }) {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-hairline bg-canvas">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="text-sm font-medium tracking-tight">Narad</Link>
-          {right}
+          <Link href="/" className="text-xs text-mute hover:text-ink">Leave room</Link>
         </div>
       </header>
-      {banner && (
-        <div role="alert" className="border-b border-warn/40 bg-warn/10 px-6 py-2 text-center text-sm text-warn">{banner}</div>
-      )}
+      {banner && <div role="alert" className="border-b border-warn/40 bg-warn/10 px-6 py-2 text-center text-sm text-warn">{banner}</div>}
       <main className="mx-auto w-full max-w-6xl flex-1 px-6">{children}</main>
     </>
   );
