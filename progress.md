@@ -66,7 +66,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 - [x] B1.4 `lib/scoring.ts`
 - [x] B1.5 Landing page
 - [x] B1.6 Room page + claim cards
-- [ ] B2.1 Switch to real pipeline (keys in; two-tab browser run with PIPELINE=real works: 6 claims judged with tier-1 sources, 6 receipt thumbnails, 26s. Still to do: one real challenge with the Agent, costs ~$0.30) (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
+- [ ] B2.1 Switch to real pipeline (keys in; two-tab browser run with PIPELINE=real works: 6 claims judged with tier-1 sources, 6 receipt thumbnails, 26s. one real challenge with the Agent works: 23s, 8 steps, live iframe + steps + result, +10 to challenger. Still to do: full 6-turn game, cache the demo) (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
 - [x] B2.2 Receipts route + thumbnails
 - [x] B2.3 Challenge button + route + scoring
 - [x] B2.4 Investigator card (iframe + steps)
@@ -84,6 +84,7 @@ Log **every real Agent run** and the wallet balance at each checkpoint. Search a
 | Time | Member | What | Steps | Est. cost | Wallet balance after |
 |---|---|---|---|---|---|
 | start | — | — | — | — | $16.00 |
+| 14:44 | B | First real challenge (room UDQD): "Nuclear plants cause more deaths per TWh than coal" on ourworldindata.org/nuclear-energy → `refuted`, 0.04 vs 24.6 deaths/TWh | 8 | $0.128 est (wallet moved $17.85 → $17.78) | $17.78 |
 | 14:27 | A | smoke test agent run (Our World in Data headline extraction) | 3 | ~$0.05 | ~$16.95 |
 
 ---
@@ -138,3 +139,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - 14:30 [A] configured TINYFISH_API_KEY in .env.local · smoke test passed (Search, Fetch, Browser session, Wallet $16.99) · check script ran with live keys: coal (supported), nuclear (supported), Chernobyl (refuted) in 16.59s · fixed warm browser URL and esbuild __name injection in receipt.ts · captured real receipt PNGs in .cache/receipts/ · smoke --agent completed in 3 steps (~$0.05 cost logged) · Member B's tasks left untouched
 - [B] real keys tested: smoke passes Search/Fetch/Browser/wallet ($17.00). CLI: "Chernobyl 1M" `refuted` (OWID+WHO tier 1), "10% of electricity" `supported`, receipts saved with the quote highlighted · my fixes in A's files, on top of A's own fixes (A: please review): `gemini.ts` retries 503/500/"high demand" + 40s call timeout; `receipt.ts` one shared warm session (parallel claims each created one), start-up no longer eats the 15s capture budget, `prewarmBrowser()` called from my join route · known: "Coal 24 deaths/TWh" and "nuclear 0.03" came back `unverifiable` (search missed the OWID page: A, check verify.ts query building) · `npm run check` never exits (open CDP connection), add `process.exit(0)` at the end of scripts/check.ts
 - [B] real-pipeline browser run OK (two tabs, demo turns 1-2: Chernobyl 1M + "more deaths than coal" `refuted`, OWID figures `supported`, scores +33 / -30). Bug fixed in `receipt.ts`: parallel captures blew the 15s limit, so the PNG was written but `receiptId` never reached the claim. Now max 3 concurrent captures, 25s each, goto 15s · next: one real Investigator challenge (needs OK to spend ~$0.30)
+- [B] first real Investigator challenge OK: 23s, 8 steps, ~$0.13; iframe streamed live, result `refuted` with the real OWID numbers, Ann +10 · UI: iframe now only shown while the agent runs, goal text trimmed before the "Return a JSON" instructions · also saw the server auto-skip a stalled turn working ("Ran out of time and passed") · next: play the full 6-turn demo script with `PIPELINE=real DEMO_CACHE=true` to cache it (D4.1)

@@ -23,13 +23,13 @@ export default function InvestigatorCard({ inv, room }: { inv: Investigation; ro
         <p className="mt-3 text-sm text-body">The Investigator budget is used up, so this challenge was not run. Your challenge is refunded.</p>
       )}
 
-      {inv.streamingUrl && (
+      {inv.streamingUrl && live && (
         <div className="mt-3 aspect-video w-full overflow-hidden rounded-md border border-hairline bg-black">
           <iframe src={inv.streamingUrl} title="Live view of the Investigator" className="h-full w-full" sandbox="allow-scripts allow-same-origin" />
         </div>
       )}
 
-      {inv.goal && <p className="mt-3 text-sm text-body">{inv.goal}</p>}
+      {inv.goal && <p className="mt-3 text-sm text-body">{inv.goal.split(/Return a JSON/i)[0].trim()}</p>}
 
       {inv.steps.length > 0 && (
         <ol className="mt-3 space-y-1 font-mono text-xs text-body">
