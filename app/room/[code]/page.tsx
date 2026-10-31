@@ -91,6 +91,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const myTurn = room.status === "active" && me === room.currentPlayer;
   const canJoin = !me && !room.players.p2;
   const turnKey = String(room.turns.length);
+  const inviteLink = `${typeof location === "undefined" ? "" : location.origin}/room/${room.code}`;
   const who = room.players[room.currentPlayer]?.name ?? room.currentPlayer;
 
   return (
@@ -124,10 +125,17 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 <div className="mt-5 font-mono text-5xl tracking-[0.3em]">{room.code}</div>
                 <button
                   className="btn-outline mt-5"
-                  onClick={() => { void navigator.clipboard?.writeText(`${location.origin}/room/${room.code}`); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+                  onClick={() => { copyText(inviteLink); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
                 >
                   {copied ? "Link copied" : "Copy invite link"}
                 </button>
+                <input
+                  readOnly
+                  value={inviteLink}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="input mx-auto mt-3 max-w-sm text-center font-mono text-xs"
+                  aria-label="Invite link"
+                />
               </div>
             )
           )}
@@ -167,6 +175,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 }
 
 const subscribeNoop = () => () => {};
+
+/** navigator.clipboard only exists on https/localhost; on a LAN http:// address fall back to execCommand. */
+function copyText(text: string) {
+  if (navigator.clipboard?.writeText) { void navigator.clipboard.writeText(text).catch(() => {}); return; }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch { /* the visible input lets them copy by hand */ }
+  document.body.removeChild(ta);
+}
 
 function Winner({ room, me }: { room: RoomView; me: "p1" | "p2" | null }) {
   const w = winner(room);

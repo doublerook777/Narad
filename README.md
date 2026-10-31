@@ -114,3 +114,9 @@ Open [http://localhost:3000](http://localhost:3000) in two separate browser tabs
 - `npm run smoke` — Verify TinyFish, Gemini, and browser connectivity
 - `npm run check -- "<argument text>"` — Run the real fact-checking pipeline on a test argument from the CLI
 - `npm run build` — Build production bundle
+
+## Playing with a teammate on the same Wi-Fi
+
+One person runs `npm run lan` (it prints the URL). The other opens that URL in a browser, no install needed.
+Rooms live in the host's memory, so only the host runs the server. If the other laptop can't connect, the host may need to open the port
+(`sudo firewall-cmd --add-port=3000/tcp` on Fedora). To test alone, open two tabs of the same browser: each tab is its own player.
