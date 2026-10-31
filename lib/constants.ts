@@ -1,5 +1,9 @@
 // Client-safe constants (no node imports). Rules from agents.md §7.
-export const TURN_SECONDS = 90;
+export const DEFAULT_TURN_SECONDS = 90;
+export const MIN_TURN_SECONDS = 30;
+export const MAX_TURN_SECONDS = 120; // room creator picks, never more than 2 minutes
+export const clampTurnSeconds = (n: unknown) =>
+  Math.min(MAX_TURN_SECONDS, Math.max(MIN_TURN_SECONDS, Math.round(Number(n)) || DEFAULT_TURN_SECONDS));
 export const MAX_CHARS = 600;
 export const MAX_CLAIMS_PER_TURN = 4;
 export const CHALLENGES_PER_PLAYER = 2;

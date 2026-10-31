@@ -1,7 +1,7 @@
 import { customAlphabet, nanoid } from "nanoid";
 import type { Claim, Investigation, PlayerSlot, Room, Turn } from "./types";
 import { scoreRoom } from "./scoring";
-import { CHALLENGES_PER_PLAYER, FINISH_GRACE_SECONDS, MAX_CHARS, STALL_GRACE_SECONDS, TURN_SECONDS } from "./constants";
+import { CHALLENGES_PER_PLAYER, FINISH_GRACE_SECONDS, MAX_CHARS, STALL_GRACE_SECONDS, clampTurnSeconds } from "./constants";
 
 // In-memory rooms. Kept on globalThis because Next dev hot-reload re-imports modules.
 const g = globalThis as unknown as {
@@ -31,13 +31,14 @@ export function mutate(code: string, fn: (room: Room) => void): Room | undefined
   return room;
 }
 
-export function createRoom(topic: string, name: string): Room {
+export function createRoom(topic: string, name: string, opts: { isPublic?: boolean; turnSeconds?: number } = {}): Room {
   let code = makeCode();
   while (rooms.has(code)) code = makeCode();
   const room: Room = {
     code, topic, status: "waiting",
     players: { p1: player("p1", name) },
     currentPlayer: "p1", round: 1, maxRounds: 3, turnDeadline: 0,
+    turnSeconds: clampTurnSeconds(opts.turnSeconds), isPublic: opts.isPublic !== false,
     turns: [], claims: [], investigations: [], events: [], version: 1,
   };
   rooms.set(code, room);
@@ -51,7 +52,7 @@ export function joinRoom(code: string, name: string): { ok: true; room: Room; sl
   mutate(code, (r) => {
     r.players.p2 = player("p2", name);
     r.status = "active";
-    r.turnDeadline = Date.now() + TURN_SECONDS * 1000;
+    r.turnDeadline = Date.now() + r.turnSeconds * 1000;
   });
   return { ok: true, room, slot: "p2" };
 }
@@ -77,7 +78,7 @@ export function submitTurn(
     } else {
       if (slot === "p2") r.round++;
       r.currentPlayer = other(slot);
-      r.turnDeadline = Date.now() + TURN_SECONDS * 1000;
+      r.turnDeadline = Date.now() + r.turnSeconds * 1000;
     }
   });
   return { ok: true, room, turn };

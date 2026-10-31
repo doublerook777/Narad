@@ -1,9 +1,7 @@
-import { TURN_SECONDS } from "@/lib/constants";
-
-export default function Timer({ remainingMs, label }: { remainingMs: number; label: string }) {
+export default function Timer({ remainingMs, label, totalSeconds = 90 }: { remainingMs: number; label: string; totalSeconds?: number }) {
   const s = Math.max(0, Math.ceil(remainingMs / 1000));
   const low = s <= 10;
-  const pct = Math.min(100, Math.max(0, (remainingMs / (TURN_SECONDS * 1000)) * 100));
+  const pct = Math.min(100, Math.max(0, (remainingMs / (totalSeconds * 1000)) * 100));
   return (
     <div className="min-w-32">
       <div className="flex items-baseline justify-between gap-3">

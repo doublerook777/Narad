@@ -122,7 +122,9 @@ export interface Room {
   status: "waiting" | "active" | "finishing" | "finished";
   players: Partial<Record<PlayerSlot, Player>>;
   currentPlayer: PlayerSlot; round: number; maxRounds: number;   // maxRounds = 3 (each player gets 3 turns)
-  turnDeadline: number;                                            // epoch ms, 90s per turn (UI-enforced)
+  turnSeconds: number;                                             // chosen by the room creator, 30..120 (default 90)
+  turnDeadline: number;                                            // epoch ms, turnSeconds after the turn started (UI-enforced)
+  isPublic: boolean;                                               // listed on the home page lobby
   turns: Turn[]; claims: Claim[]; investigations: Investigation[];
   events: ScoreEvent[];
   version: number;                                                 // ++ on every mutation
@@ -205,7 +207,7 @@ Auth: header `X-API-Key: $TINYFISH_API_KEY` (the SDK does this). Full docs: http
 | Challenge fails (investigation says supported) | challenger **−5** |
 | Relevance | multiply the claim's base points by `relevance` (0.5..1), round to integer |
 
-- 3 rounds, alternating p1 → p2. 90s per turn (UI timer; on 0 the textbox auto-submits whatever is there).
+- 3 rounds, alternating p1 → p2. Turn length is set by the room creator (30-120s, default 90). UI timer; on 0 the textbox auto-submits whatever is there.
 - Max 600 chars per argument, max 4 checkable claims extracted per turn.
 - 2 challenges per player per game. A challenge can target any opponent claim whose verdict isn't `pending`.
 - Game ends after the last turn **and** after all checks/investigations finish (or 60s grace, whichever is first).

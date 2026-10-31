@@ -98,7 +98,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     <Shell
       banner={failures >= 2 ? "Connection lost. Retrying… your game is safe on the server." : undefined}
       right={
-        room.status === "active" ? <Timer remainingMs={remaining} label={myTurn ? "Your time" : `${who}'s time`} />
+        room.status === "active" ? <Timer remainingMs={remaining} totalSeconds={room.turnSeconds} label={myTurn ? "Your time" : `${who}'s time`} />
         : room.status === "finishing" ? <Timer remainingMs={remaining} label="Final checks" /> : null
       }
     >

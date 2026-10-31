@@ -37,7 +37,9 @@ export interface Room {
   status: "waiting" | "active" | "finishing" | "finished";
   players: Partial<Record<PlayerSlot, Player>>;
   currentPlayer: PlayerSlot; round: number; maxRounds: number;   // maxRounds = 3 (each player gets 3 turns)
-  turnDeadline: number;                                            // epoch ms, 90s per turn (UI-enforced)
+  turnSeconds: number;                                             // chosen by the room creator, 30..120 (default 90)
+  turnDeadline: number;                                            // epoch ms, turnSeconds after the turn started (UI-enforced)
+  isPublic: boolean;                                               // listed on the home page lobby
   turns: Turn[]; claims: Claim[]; investigations: Investigation[];
   events: ScoreEvent[];
   version: number;                                                 // ++ on every mutation
