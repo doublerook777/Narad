@@ -5,7 +5,7 @@ interface NextEnvModule {
   loadEnvConfig?: (dir: string) => void;
 }
 const envMod = nextEnv as unknown as NextEnvModule;
-const loadEnvConfig = envMod.default?.loadEnvConfig || envMod.loadEnvConfig || (() => {});
+const loadEnvConfig = envMod.default?.loadEnvConfig || envMod.loadEnvConfig || (() => { });
 loadEnvConfig(process.cwd());
 
 import { TinyFish } from "@tiny-fish/sdk";
@@ -14,7 +14,7 @@ import { GoogleGenAI } from "@google/genai";
 async function main() {
   const tinyfishApiKey = process.env.TINYFISH_API_KEY;
   const geminiApiKey = process.env.GEMINI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+  const geminiModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
   console.log("=== SMOKE TEST START ===");
 

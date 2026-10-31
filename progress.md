@@ -66,7 +66,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 - [x] B1.4 `lib/scoring.ts`
 - [x] B1.5 Landing page
 - [x] B1.6 Room page + claim cards
-- [ ] B2.1 Switch to real pipeline (keys in; two-tab browser run with PIPELINE=real works: 6 claims judged with tier-1 sources, 6 receipt thumbnails, 26s. one real challenge with the Agent works: 23s, 8 steps, live iframe + steps + result, +10 to challenger. Still to do: full 6-turn game, cache the demo) (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
+- [ ] B2.1 Switch to real pipeline (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
 - [x] B2.2 Receipts route + thumbnails
 - [x] B2.3 Challenge button + route + scoring
 - [x] B2.4 Investigator card (iframe + steps)
@@ -84,7 +84,6 @@ Log **every real Agent run** and the wallet balance at each checkpoint. Search a
 | Time | Member | What | Steps | Est. cost | Wallet balance after |
 |---|---|---|---|---|---|
 | start | — | — | — | — | $16.00 |
-| 14:44 | B | First real challenge (room UDQD): "Nuclear plants cause more deaths per TWh than coal" on ourworldindata.org/nuclear-energy → `refuted`, 0.04 vs 24.6 deaths/TWh | 8 | $0.128 est (wallet moved $17.85 → $17.78) | $17.78 |
 | 14:27 | A | smoke test agent run (Our World in Data headline extraction) | 3 | ~$0.05 | ~$16.95 |
 
 ---
