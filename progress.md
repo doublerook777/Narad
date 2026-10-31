@@ -84,6 +84,7 @@ Log **every real Agent run** and the wallet balance at each checkpoint. Search a
 | Time | Member | What | Steps | Est. cost | Wallet balance after |
 |---|---|---|---|---|---|
 | start | — | — | — | — | $16.00 |
+| 14:27 | A | smoke test agent run (Our World in Data headline extraction) | 3 | ~$0.05 | ~$16.95 |
 
 ---
 
@@ -134,3 +135,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - 13:36 [A] merged a/p1-core into main · real pipeline and backend live on main!
 - [B] verified A's merge on main: tsc passes, `PIPELINE=real` without keys → claim `unverifiable` + game continues, mock mode unchanged · next: B2.1 live run once `TINYFISH_API_KEY` and `GEMINI_API_KEY` are in `.env.local` · A: B2.1 stays unticked until a real run works
 - 13:48 [A] configured GEMINI_API_KEY in .env.local · updated model to gemini-3.5-flash-lite · fixed all 29 eslint errors (0 errors, 0 warnings, tsc clean) · smoke test verifies Gemini OK · check script extracts claims successfully via Gemini · awaiting TINYFISH_API_KEY to run live web search, browser receipt screenshot, and smoke --agent
+- 14:30 [A] configured TINYFISH_API_KEY in .env.local · smoke test passed (Search, Fetch, Browser session, Wallet $16.99) · check script ran with live keys: coal (supported), nuclear (supported), Chernobyl (refuted) in 16.59s · fixed warm browser URL and esbuild __name injection in receipt.ts · captured real receipt PNGs in .cache/receipts/ · smoke --agent completed in 3 steps (~$0.05 cost logged) · Member B's tasks left untouched

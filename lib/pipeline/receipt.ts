@@ -33,7 +33,7 @@ async function getWarmBrowser(): Promise<Browser | null> {
     const tf = getTinyFishClient();
     console.log("[receipt] Creating warm browser session (timeout 300s)...");
     const session = await tf.browser.sessions.create({
-      url: "about:blank",
+      url: "https://example.com",
       timeout_seconds: 300,
     });
 
@@ -92,15 +92,15 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
       // Highlight the quote in the DOM if found
       if (quote && quote.trim().length > 5) {
         const cleanQuote = quote.trim().slice(0, 120);
-        await page.evaluate((targetQuote) => {
-          function searchAndHighlight(node: Node): boolean {
-            if (node.nodeType === Node.TEXT_NODE) {
-              const text = node.textContent || "";
-              const idx = text.toLowerCase().indexOf(targetQuote.toLowerCase());
+        await page.evaluate(`(function(targetQuote) {
+          function searchAndHighlight(node) {
+            if (node.nodeType === 3) {
+              var text = node.textContent || "";
+              var idx = text.toLowerCase().indexOf(targetQuote.toLowerCase());
               if (idx !== -1) {
-                const parent = node.parentElement;
+                var parent = node.parentElement;
                 if (parent) {
-                  const mark = document.createElement("mark");
+                  var mark = document.createElement("mark");
                   mark.style.backgroundColor = "#fef08a";
                   mark.style.color = "#000000";
                   mark.style.padding = "2px 4px";
@@ -108,8 +108,8 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
                   mark.style.boxShadow = "0 0 0 2px #eab308";
                   mark.textContent = text.slice(idx, idx + targetQuote.length);
 
-                  const before = document.createTextNode(text.slice(0, idx));
-                  const after = document.createTextNode(text.slice(idx + targetQuote.length));
+                  var before = document.createTextNode(text.slice(0, idx));
+                  var after = document.createTextNode(text.slice(idx + targetQuote.length));
 
                   parent.replaceChild(after, node);
                   parent.insertBefore(mark, after);
@@ -119,12 +119,12 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
                   return true;
                 }
               }
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-              const el = node as HTMLElement;
-              const tag = el.tagName.toLowerCase();
+            } else if (node.nodeType === 1) {
+              var el = node;
+              var tag = el.tagName ? el.tagName.toLowerCase() : "";
               if (tag !== "script" && tag !== "style" && tag !== "mark") {
-                for (let i = 0; i < node.childNodes.length; i++) {
-                  if (searchAndHighlight(node.childNodes[i])) {
+                for (var i = 0; i < el.childNodes.length; i++) {
+                  if (searchAndHighlight(el.childNodes[i])) {
                     return true;
                   }
                 }
@@ -132,9 +132,8 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
             }
             return false;
           }
-
           searchAndHighlight(document.body);
-        }, cleanQuote);
+        })(${JSON.stringify(cleanQuote)})`);
       }
 
       // Small pause for layout/scroll

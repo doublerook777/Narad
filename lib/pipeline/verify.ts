@@ -137,7 +137,7 @@ export async function verifyClaim(
     onStage?.("judging");
     const pageExcerpts = validPages
       .map((p, idx) => {
-        const snippet = p.text.slice(0, 1500).replace(/\s+/g, " ");
+        const snippet = p.text.slice(0, 20000).replace(/\s+/g, " ");
         return `[Source ${idx + 1}] (${p.url}) Title: "${p.title}"\nContent: "${snippet}"`;
       })
       .join("\n\n");
