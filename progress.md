@@ -58,7 +58,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 **Blocked by:** —
 
 - [ ] B0.1 Gemini key works
-- [ ] B0.2 Branch + dev server
+- [x] B0.2 Branch + dev server
 - [x] B0.3 Demo script written (below)
 - [ ] B1.1 `lib/store.ts`
 - [ ] B1.2 `lib/pipeline/mock.ts`
@@ -119,3 +119,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 
 - 13:14 [A] completed A0.1 - A0.4 (scaffold, deps, lib/types.ts, .env.example, scripts/smoke.ts) · next: Member B begins B0.1/B0.2, Member A begins Phase 1 (lib/tinyfish.ts) · pushed scaffold to main
 - [B] did B0.3 demo script (nuclear vs fossil topic) · next: B0.2, then B1.x · DESIGN.md is the UI style guide (warm dark canvas, Inter/DM Mono, no accent colour)
+- [B] did B0.2; disabled `cacheComponents`/`partialPrefetching`/`agentRules` in next.config.ts (shared file, A: pull main) · next: B1.x on b/p1-rooms
