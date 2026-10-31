@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useMemo, useRef, useState, useSyncExternal
 import ArgumentBox from "@/components/ArgumentBox";
 import Chat from "@/components/Chat";
 import EventFeed from "@/components/EventFeed";
-import VersusBar from "@/components/VersusBar";
+import VersusBar, { StanceChip } from "@/components/VersusBar";
 import { fmtTime, post, saveSeat, seatKey, type RoomView, type Seat } from "@/lib/client";
 import { POLL_MS } from "@/lib/constants";
 import type { PlayerSlot } from "@/lib/types";
@@ -121,7 +121,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
               {myTurn && (
                 <div className="mt-8">
-                  <ArgumentBox code={code} slot={me!} turnKey={String(room.turns.length)} remainingMs={remaining} totalSeconds={room.turnSeconds} />
+                  <ArgumentBox code={code} slot={me!} turnKey={String(room.turns.length)} remainingMs={remaining} totalSeconds={room.turnSeconds} stance={room.players[me!]!.stance} topic={room.topic} />
                 </div>
               )}
               {room.status === "active" && !me && <p className="mt-8 text-center text-sm text-mute">You&apos;re watching this debate.</p>}
@@ -134,7 +134,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             <div className="eyebrow">Room {room.code}</div>
             <dl className="mt-2 space-y-1 text-sm">
               <div className="flex justify-between"><dt className="text-mute">Time per turn</dt><dd className="font-mono tabular-nums">{fmtTime(room.turnSeconds)}</dd></div>
-              <div className="flex justify-between"><dt className="text-mute">Rounds</dt><dd className="font-mono tabular-nums">{room.round} / {room.maxRounds}</dd></div>
+              <div className="flex justify-between"><dt className="text-mute">Round</dt><dd className="font-mono tabular-nums">{room.round} of {room.maxRounds}</dd></div>
               <div className="flex justify-between"><dt className="text-mute">Visibility</dt><dd>{room.isPublic ? "Public" : "Private"}</dd></div>
             </dl>
           </div>
@@ -156,14 +156,17 @@ function Lobby(props: {
         <div className="eyebrow">The motion</div>
         <h1 className="mt-1 font-serif text-4xl italic leading-10">{room.topic}</h1>
         <p className="mt-3 text-sm text-body">
-          <span className="font-mono">{fmtTime(room.turnSeconds)}</span> per turn · 3 rounds each · {room.isPublic ? "listed in Open rooms" : "private room"}
+          <span className="font-mono">{fmtTime(room.turnSeconds)}</span> per turn · {room.maxRounds} rounds each · {room.isPublic ? "listed in Open rooms" : "private room"}
         </p>
       </div>
 
       {canJoin ? (
         <div className="card p-6">
           <h2 className="text-2xl font-medium tracking-tight">Join this debate</h2>
-          <p className="mt-1 text-sm text-body">{room.players.p1?.name} is waiting for an opponent.</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-body">
+            {room.players.p1?.name} argues {room.players.p1 && <StanceChip stance={room.players.p1.stance} />}. You will argue
+            {room.players.p1 && <StanceChip stance={room.players.p1.stance === "for" ? "against" : "for"} />}.
+          </p>
           <input className="input mt-4" placeholder="Your name" maxLength={24} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && join()} autoFocus />
           {joinError && <p className="mt-2 text-sm text-bad">{joinError}</p>}
           <button className="btn-primary mt-4" onClick={join}>Join as Player 2</button>
@@ -171,6 +174,7 @@ function Lobby(props: {
       ) : (
         <div className="card p-8 text-center">
           <p className="pulse font-serif text-3xl italic text-body-strong">Waiting for an opponent…</p>
+          {room.players.p1 && <p className="mt-2 flex items-center justify-center gap-2 text-sm text-body">You argue <StanceChip stance={room.players.p1.stance} />, your opponent gets the other side.</p>}
           <p className="mt-2 text-sm text-body">{room.isPublic ? "Your room is listed on the home page. You can also share the code." : "Share this code or link, since the room is private."}</p>
           <div className="mt-5 font-mono text-5xl tracking-[0.3em]">{room.code}</div>
           <button className="btn-outline mt-5" onClick={onCopy}>{copied ? "Link copied" : "Copy invite link"}</button>

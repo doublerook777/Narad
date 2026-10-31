@@ -2,12 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { MAX_CHARS } from "@/lib/constants";
 import { post } from "@/lib/client";
-import type { PlayerSlot } from "@/lib/types";
+import type { PlayerSlot, Stance } from "@/lib/types";
 
-interface Props { code: string; slot: PlayerSlot; turnKey: string; remainingMs: number; totalSeconds: number }
+interface Props { code: string; slot: PlayerSlot; turnKey: string; remainingMs: number; totalSeconds: number; stance: Stance; topic: string }
 
 /** The message box pinned to the bottom of the screen, like a chat app. */
-export default function ArgumentBox({ code, slot, turnKey, remainingMs, totalSeconds }: Props) {
+export default function ArgumentBox({ code, slot, turnKey, remainingMs, totalSeconds, stance, topic }: Props) {
   const [text, setText] = useState("");
   const [cite, setCite] = useState("");
   const [showCite, setShowCite] = useState(false);
@@ -42,7 +42,11 @@ export default function ArgumentBox({ code, slot, turnKey, remainingMs, totalSec
       <div className="h-1 w-full overflow-hidden rounded-full bg-hairline">
         <div className={`h-1 rounded-full ${low ? "bg-bad" : "bg-primary"}`} style={{ width: `${pct}%`, transition: "width 1s linear" }} />
       </div>
-      <div className="mt-3 flex items-end gap-3">
+      <p className="mt-2 text-xs text-body">
+        You argue <span className="font-mono font-medium uppercase text-ink">{stance}</span>: <span className="italic">{topic}</span>
+        <span className="text-mute"> · off-topic −20 · arguing the other side −5</span>
+      </p>
+      <div className="mt-2 flex items-end gap-3">
         <div className="min-w-0 flex-1">
           <textarea
             className="input h-24 resize-none text-base leading-6"

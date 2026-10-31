@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import type { PlayerSlot, Room, Turn } from "@/lib/types";
 import ClaimCard from "./ClaimCard";
+import { StanceChip } from "./VersusBar";
 
 function Avatar({ slot, name }: { slot: PlayerSlot; name: string }) {
   return (
@@ -16,7 +17,8 @@ function Message({ turn, room, code, me, now }: { turn: Turn; room: Room; code: 
   const right = turn.player === "p2";
   const name = room.players[turn.player]?.name ?? turn.player;
   const claims = room.claims.filter((c) => c.turnId === turn.id);
-  const extracting = !!turn.text && claims.length === 0 && now - turn.submittedAt < 30_000;
+  // Only "picking out facts" while the referee/extractor are still working; an off-topic turn may never get claims.
+  const extracting = !!turn.text && claims.length === 0 && now - turn.submittedAt < (turn.offTopic ? 12_000 : 30_000);
   const passed = !turn.text;
   return (
     <div className={`flex gap-3 ${right ? "flex-row-reverse" : ""}`}>
@@ -24,6 +26,7 @@ function Message({ turn, room, code, me, now }: { turn: Turn; room: Room; code: 
       <div className={`flex min-w-0 max-w-[92%] flex-1 flex-col sm:max-w-[85%] ${right ? "items-end" : "items-start"}`}>
         <div className={`mb-1 flex items-baseline gap-2 ${right ? "flex-row-reverse" : ""}`}>
           <span className="text-sm font-medium text-body-strong">{name}{me === turn.player ? " (you)" : ""}</span>
+          {room.players[turn.player] && <StanceChip stance={room.players[turn.player]!.stance} />}
           <span className="eyebrow">Round {turn.round}</span>
         </div>
         <div
@@ -39,13 +42,25 @@ function Message({ turn, room, code, me, now }: { turn: Turn; room: Room; code: 
             cited: {turn.citedUrl}
           </a>
         )}
+        {turn.offTopic && <Notice tone="bad" right={right}>Off-topic · −20{turn.judgeNote ? ` · ${turn.judgeNote}` : ""}</Notice>}
+        {!turn.offTopic && turn.wrongSide && <Notice tone="warn" right={right}>Argued the other side · −5{turn.judgeNote ? ` · ${turn.judgeNote}` : ""}</Notice>}
         <div className="mt-3 w-full space-y-3">
           {extracting && <p className={`pulse font-mono text-xs text-mute ${right ? "text-right" : ""}`}>Picking out the facts…</p>}
-          {turn.text && !extracting && claims.length === 0 && <p className={`text-xs text-mute ${right ? "text-right" : ""}`}>No checkable claims found.</p>}
+          {turn.text && !extracting && claims.length === 0 && (
+            <p className={`text-xs text-mute ${right ? "text-right" : ""}`}>{turn.offTopic ? "Not fact-checked: it isn't about the motion." : "No checkable claims found."}</p>
+          )}
           {claims.map((c) => <ClaimCard key={c.id} claim={c} room={room} code={code} me={me} />)}
         </div>
       </div>
     </div>
+  );
+}
+
+function Notice({ tone, right, children }: { tone: "bad" | "warn"; right: boolean; children: React.ReactNode }) {
+  return (
+    <p className={`mt-2 max-w-full rounded-sm border px-3 py-1.5 text-xs ${tone === "bad" ? "border-bad/40 bg-bad/10 text-bad" : "border-warn/40 bg-warn/10 text-warn"} ${right ? "text-right" : ""}`}>
+      {children}
+    </p>
   );
 }
 

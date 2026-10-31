@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { DEFAULT_TURN_SECONDS, MAX_TURN_SECONDS, MIN_TURN_SECONDS } from "@/lib/constants";
+import { DEFAULT_ROUNDS, DEFAULT_TURN_SECONDS, MAX_ROUNDS, MAX_TURN_SECONDS, MIN_ROUNDS, MIN_TURN_SECONDS } from "@/lib/constants";
 import { fmtTime, post, saveSeat } from "@/lib/client";
 import type { LobbyRoom, TrendingTopic } from "@/lib/lobby-types";
 
@@ -19,6 +19,8 @@ export default function Landing() {
   const [name, setName] = useState("");
   const [topic, setTopic] = useState("");
   const [seconds, setSeconds] = useState(DEFAULT_TURN_SECONDS);
+  const [rounds, setRounds] = useState(DEFAULT_ROUNDS);
+  const [stance, setStance] = useState<"for" | "against">("for");
   const [isPublic, setIsPublic] = useState(true);
   const [joinCode, setJoinCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,7 +56,7 @@ export default function Landing() {
   async function create() {
     if (topic.trim().length < 3) { setError("Type a topic, or pick one from Hot right now below."); topicRef.current?.focus(); return; }
     setBusy(true); setError("");
-    const { ok, data } = await post<{ code: string }>("/api/rooms", { topic: topic.trim(), name, isPublic, turnSeconds: seconds });
+    const { ok, data } = await post<{ code: string }>("/api/rooms", { topic: topic.trim(), name, isPublic, turnSeconds: seconds, maxRounds: rounds, stance });
     setBusy(false);
     if (!ok) return setError(data.error ?? "Could not create the room");
     saveSeat(data.code, { slot: "p1", name: name.trim() || "Player 1" });
@@ -111,6 +113,21 @@ export default function Landing() {
             />
             <p className="mt-1 text-xs text-mute">Need an idea? Pick one from “Hot right now” below.</p>
 
+            <label className="eyebrow mt-5 block">Your side</label>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {([["for", "For", "You argue the motion is true"], ["against", "Against", "You argue it is false"]] as const).map(([val, title, sub]) => (
+                <button
+                  key={val}
+                  onClick={() => setStance(val)}
+                  className={`rounded-sm border px-3 py-2 text-left ${stance === val ? "border-primary bg-canvas text-ink" : "border-hairline text-body hover:bg-canvas"}`}
+                >
+                  <div className="text-sm font-medium">{title}</div>
+                  <div className="text-xs text-mute">{sub}</div>
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-mute">Whoever joins gets the other side. Stay on the motion: straying costs −20, arguing your opponent&apos;s side costs −5.</p>
+
             <div className="mt-5 flex items-baseline justify-between">
               <label className="eyebrow" htmlFor="secs">Time per turn</label>
               <span className="font-mono text-lg tabular-nums">{fmtTime(seconds)}</span>
@@ -121,6 +138,17 @@ export default function Landing() {
               value={seconds} onChange={(e) => setSeconds(Number(e.target.value))}
             />
             <div className="mt-1 flex justify-between font-mono text-[10px] text-mute"><span>0:30</span><span>2:00 max</span></div>
+
+            <div className="mt-5 flex items-baseline justify-between">
+              <label className="eyebrow" htmlFor="rounds">Rounds (turns each)</label>
+              <span className="font-mono text-lg tabular-nums">{rounds}</span>
+            </div>
+            <input
+              id="rounds" type="range" className="mt-2 w-full accent-[#f7f5f0]"
+              min={MIN_ROUNDS} max={MAX_ROUNDS} step={1}
+              value={rounds} onChange={(e) => setRounds(Number(e.target.value))}
+            />
+            <div className="mt-1 flex justify-between font-mono text-[10px] text-mute"><span>{MIN_ROUNDS}</span><span>{MAX_ROUNDS} max</span></div>
 
             <label className="eyebrow mt-5 block">Who can find this room</label>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -164,14 +192,14 @@ export default function Landing() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-ink">{r.topic}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-mute">
-                        <span>{r.host}</span>
-                        <span className="font-mono">{fmtTime(r.turnSeconds)} / turn</span>
+                        <span>{r.host} · <span className="font-mono uppercase">{r.hostStance}</span></span>
+                        <span className="font-mono">{fmtTime(r.turnSeconds)} / turn · {r.maxRounds} rounds</span>
                         <span>{r.status === "waiting" ? "Waiting for an opponent" : `Round ${r.round} of ${r.maxRounds}`}</span>
                       </p>
                     </div>
                     <Presence online={r.online} />
                     <button className={r.seatOpen ? "btn-primary" : "btn-outline"} onClick={() => goTo(r.code)}>
-                      {r.seatOpen ? "Join" : "Watch"}
+                      {r.seatOpen ? `Join · ${r.hostStance === "for" ? "Against" : "For"}` : "Watch"}
                     </button>
                   </li>
                 ))}

@@ -2,6 +2,10 @@ import { winner } from "@/lib/scoring";
 import type { PlayerSlot, Room } from "@/lib/types";
 import Timer from "./Timer";
 
+export function StanceChip({ stance }: { stance: "for" | "against" }) {
+  return <span className={`chip shrink-0 uppercase ${stance === "for" ? "border-primary text-ink" : "border-mute text-body"}`}>{stance}</span>;
+}
+
 function Side({ room, slot, me }: { room: Room; slot: PlayerSlot; me: PlayerSlot | null }) {
   const p = room.players[slot];
   const speaking = room.status === "active" && room.currentPlayer === slot;
@@ -13,7 +17,10 @@ function Side({ room, slot, me }: { room: Room; slot: PlayerSlot; me: PlayerSlot
           {(p?.name ?? "?").slice(0, 1).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-body-strong">{p?.name ?? "Waiting…"}{me === slot ? " (you)" : ""}</div>
+          <div className={`flex items-center gap-2 ${right ? "flex-row-reverse" : ""}`}>
+            <span className="truncate text-sm font-medium text-body-strong">{p?.name ?? "Waiting…"}{me === slot ? " (you)" : ""}</span>
+            {p && <StanceChip stance={p.stance} />}
+          </div>
           <div className="eyebrow">{speaking ? "Speaking" : p ? `${p.challengesLeft} challenge${p.challengesLeft === 1 ? "" : "s"}` : "Empty seat"}</div>
         </div>
       </div>

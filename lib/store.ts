@@ -9,10 +9,12 @@ const g = globalThis as unknown as {
   __naradRooms?: Map<string, Room>;
   __naradWork?: Map<string, number>;
   __naradSeen?: Map<string, Partial<Record<PlayerSlot, number>>>;
+  __naradSkipped?: Set<string>;
 };
 const rooms = (g.__naradRooms ??= new Map<string, Room>());
 const work = (g.__naradWork ??= new Map<string, number>()); // in-flight pipeline jobs per room
 
+const skippedTurns = (g.__naradSkipped ??= new Set<string>()); // turns the referee ruled entirely off-topic: no claims kept
 const seen = (g.__naradSeen ??= new Map<string, Partial<Record<PlayerSlot, number>>>()); // last poll per seat
 const ONLINE_MS = 8_000;        // a seat counts as "in the room" if it polled this recently
 const LOBBY_GRACE_MS = 60_000;  // an empty room stays listed this long before it disappears
@@ -136,8 +138,15 @@ export function setTurnJudgement(code: string, turnId: string, j: { offTopic: bo
   });
 }
 
+/** The referee ruled the whole turn off-topic: drop its claims and ignore any the pipeline still emits. */
+export function skipTurnClaims(code: string, turnId: string) {
+  skippedTurns.add(turnId);
+  mutate(code, (r) => { r.claims = r.claims.filter((c) => c.turnId !== turnId); });
+}
+
 /** Pipeline `emit` target: replace the claim by id (keeps array order), keep store-owned fields. */
 export function upsertClaim(code: string, claim: Claim) {
+  if (skippedTurns.has(claim.turnId)) return;
   mutate(code, (r) => {
     const i = r.claims.findIndex((c) => c.id === claim.id);
     if (i === -1) r.claims.push({ ...claim });

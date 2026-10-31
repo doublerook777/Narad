@@ -17,6 +17,8 @@ const CITE_MATCH = 5;
 const CITE_MISREPRESENTED = -10;
 const CHALLENGE_WIN = 10;
 const CHALLENGE_LOSS = -5;
+const OFF_TOPIC = -20;
+const WRONG_SIDE = -5;
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const hasResult = (i: Investigation) => (i.status === "done" || i.status === "cached") && !!i.result;
@@ -66,6 +68,15 @@ export function scoreRoom(room: Room): Room {
         reason: `${verdict}: ${short(claim.text)}`,
         claimId: claim.id,
       });
+    }
+  }
+
+  // Referee penalties, once per turn. Straying from the motion outranks arguing the wrong side.
+  for (const t of room.turns) {
+    if (t.offTopic) {
+      push(`turn:${t.id}:off`, { player: t.player, delta: OFF_TOPIC, reason: `off-topic: ${t.judgeNote || "strayed from the motion"}` });
+    } else if (t.wrongSide) {
+      push(`turn:${t.id}:side`, { player: t.player, delta: WRONG_SIDE, reason: `argued the other side: ${t.judgeNote || "against own stance"}` });
     }
   }
 
