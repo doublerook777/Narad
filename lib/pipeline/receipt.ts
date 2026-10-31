@@ -32,6 +32,20 @@ function getWarmBrowser(): Promise<Browser | null> {
   return globalThis.__naradWarmPending;
 }
 
+// A single remote browser slows down badly with many pages loading at once, so cap concurrent captures.
+const MAX_CONCURRENT_CAPTURES = 3;
+let activeCaptures = 0;
+const captureQueue: (() => void)[] = [];
+async function acquireCaptureSlot(): Promise<void> {
+  if (activeCaptures < MAX_CONCURRENT_CAPTURES) { activeCaptures++; return; }
+  await new Promise<void>((resolve) => captureQueue.push(resolve)); // slot is handed over, count unchanged
+}
+function releaseCaptureSlot(): void {
+  const next = captureQueue.shift();
+  if (next) next();
+  else activeCaptures--;
+}
+
 /** Call when a game starts so the first receipt doesn't pay the session start-up cost. */
 export function prewarmBrowser(): void {
   void getWarmBrowser().catch(() => {});
@@ -86,11 +100,13 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
   const receiptFilePath = path.join(receiptsDir, `${id}.png`);
 
   // 15-second total timeout as mandated in plan.md A2.1
-  const timeoutMs = 15_000;
+  const timeoutMs = 25_000; // per capture, counted once a slot is free (was 15s: too tight when pages load in parallel)
 
   // Session start-up has its own allowance; the 15s budget below is only for capturing.
   const browser = await withTimeout(getWarmBrowser(), 45_000, null);
   if (!browser) return undefined;
+
+  await acquireCaptureSlot();
 
   const capturePromise = (async (): Promise<string | undefined> => {
     await fs.mkdir(receiptsDir, { recursive: true });
@@ -101,7 +117,7 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
     try {
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(url, {
-        timeout: 10_000,
+        timeout: 15_000,
         waitUntil: "domcontentloaded",
       });
 
@@ -170,11 +186,15 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
     setTimeout(() => resolve(undefined), timeoutMs);
   });
 
+  capturePromise.catch(() => {}); // a capture that loses the race must not become an unhandled rejection
+
   try {
     const result = await Promise.race([capturePromise, timeoutPromise]);
     return result;
   } catch (err) {
     console.warn(`[receipt] captureReceipt failed for ${id}:`, (err as Error)?.message || err);
     return undefined;
+  } finally {
+    releaseCaptureSlot();
   }
 }
