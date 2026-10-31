@@ -24,15 +24,15 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 
 ## Member A: Pipeline / Backend
 
-**Branch:** `—`
-**Now working on:** —
-**Half-done / where I stopped:** —
+**Branch:** `main`
+**Now working on:** Phase 0 complete; pushing scaffold for Member B
+**Half-done / where I stopped:** Checkpoint 0 reached
 **Blocked by:** —
 
-- [ ] A0.1 Scaffold Next.js
-- [ ] A0.2 Install deps + scripts
-- [ ] A0.3 `lib/types.ts` + `.env.example` on main
-- [ ] A0.4 `scripts/smoke.ts`
+- [x] A0.1 Scaffold Next.js
+- [x] A0.2 Install deps + scripts
+- [x] A0.3 `lib/types.ts` + `.env.example` on main
+- [x] A0.4 `scripts/smoke.ts`
 - [ ] A1.1 `lib/tinyfish.ts` wrappers
 - [ ] A1.2 `lib/gemini.ts` + `lib/cache.ts`
 - [ ] A1.3 `lib/sources.ts` domain tiers
@@ -113,4 +113,4 @@ Log **every real Agent run** and the wallet balance at each checkpoint. Search a
 
 Format: `HH:MM [A|B] did X · next: Y · notes`
 
-- 
+- 13:14 [A] completed A0.1 - A0.4 (scaffold, deps, lib/types.ts, .env.example, scripts/smoke.ts) · next: Member B begins B0.1/B0.2, Member A begins Phase 1 (lib/tinyfish.ts) · pushed scaffold to main
