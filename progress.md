@@ -52,8 +52,8 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 
 ## Member B: Game / UI
 
-**Branch:** `b/p1-rooms`
-**Now working on:** Phase 1 done with `PIPELINE=mock`. Switching to real pipeline (`PIPELINE=real`) now that A is merged.
+**Branch:** `b/p3-status`
+**Now working on:** B2.1: live test of `PIPELINE=real`. Blocked on API keys in `.env.local`
 **Half-done / where I stopped:** B2.2/B2.3/B2.4/B3.1/B3.2 are built and tested against the mock only; they need a real receipt PNG and a real `streamingUrl` to be fully verified. B0.1 (Gemini key) not done by me.
 **Blocked by:** nothing
 
@@ -66,7 +66,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 - [x] B1.4 `lib/scoring.ts`
 - [x] B1.5 Landing page
 - [x] B1.6 Room page + claim cards
-- [x] B2.1 Switch to real pipeline
+- [ ] B2.1 Switch to real pipeline (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
 - [x] B2.2 Receipts route + thumbnails
 - [x] B2.3 Challenge button + route + scoring
 - [x] B2.4 Investigator card (iframe + steps)
@@ -132,3 +132,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - 13:28 [A] completed A2.1 - A2.4 on branch a/p1-core (receipt.ts warm browser highlight/screenshot, budget.ts ledger guard, portal map indicators, investigate.ts TinyAgent live streaming + result extraction) · tsc passed · ready for Phase 3
 - 13:33 [A] completed A3.1 - A3.3, D4.4 on branch a/p1-core (gemini concurrency limiter, AUTO_ESCALATE integration, /api/health endpoint, comprehensive README.md) · tsc passed · Member A tasks complete!
 - 13:36 [A] merged a/p1-core into main · real pipeline and backend live on main!
+- [B] verified A's merge on main: tsc passes, `PIPELINE=real` without keys → claim `unverifiable` + game continues, mock mode unchanged · next: B2.1 live run once `TINYFISH_API_KEY` and `GEMINI_API_KEY` are in `.env.local` · A: B2.1 stays unticked until a real run works
