@@ -8,5 +8,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
   const { name } = await req.json().catch(() => ({}));
   const res = joinRoom(code, String(name ?? "").trim().slice(0, 24) || "Player 2");
   if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.error === "Room not found" ? 404 : 409 });
+  // Start the TinyFish browser now (10-30s) so the first receipt doesn't wait for it.
+  if (process.env.PIPELINE === "real") void import("@/lib/pipeline/receipt").then((m) => m.prewarmBrowser());
   return NextResponse.json({ slot: res.slot });
 }

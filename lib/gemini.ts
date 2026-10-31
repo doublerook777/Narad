@@ -96,7 +96,7 @@ export async function json<T>(
   const model = options?.model || process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   const client = getClient();
 
-  const maxRetries = 3;
+  const maxRetries = 4;
   let delayMs = 1500;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -104,6 +104,7 @@ export async function json<T>(
     try {
       const config: Record<string, unknown> = {
         responseMimeType: "application/json",
+        httpOptions: { timeout: 40_000 }, // never hang a claim on one Gemini call
       };
       if (schema) {
         config.responseSchema = schema;
@@ -128,7 +129,7 @@ export async function json<T>(
     } catch (err: unknown) {
       const is429 = isRateLimitError(err);
       if (is429 && attempt < maxRetries) {
-        console.warn(`[gemini] 429 rate limit hit, retrying in ${delayMs}ms (attempt ${attempt}/${maxRetries})...`);
+        console.warn(`[gemini] transient error (429/503), retrying in ${delayMs}ms (attempt ${attempt}/${maxRetries})...`);
         await new Promise((r) => setTimeout(r, delayMs));
         delayMs *= 2;
         continue;

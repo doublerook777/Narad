@@ -46,7 +46,7 @@ Fill in `.env.local`:
 ```ini
 TINYFISH_API_KEY=your_tinyfish_api_key
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 PIPELINE=real                     # "real" for live pipeline, "mock" for offline UI dev
 AGENT_RUN_LIMIT=20                # Hard cap on TinyAgent runs to protect $16 budget
 AUTO_ESCALATE=false               # Auto-trigger investigator for unverifiable numeric stats

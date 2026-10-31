@@ -12,17 +12,32 @@ interface WarmBrowserState {
 
 declare global {
   var __naradWarmBrowser: WarmBrowserState | null | undefined;
+  var __naradWarmPending: Promise<Browser | null> | undefined;
 }
 
-async function getWarmBrowser(): Promise<Browser | null> {
-  const existing = globalThis.__naradWarmBrowser;
-  if (existing && existing.browser.isConnected()) {
-    // If session is older than 4.5 minutes (timeout is 300s), refresh it
-    if (Date.now() - existing.createdAt < 270_000) {
-      return existing.browser;
-    }
-  }
+const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T) =>
+  Promise.race([p, new Promise<T>((r) => setTimeout(() => r(fallback), ms))]);
 
+/** One shared session: parallel claims must not each create their own (10-30s and billed). */
+function getWarmBrowser(): Promise<Browser | null> {
+  const existing = globalThis.__naradWarmBrowser;
+  if (existing && existing.browser.isConnected() && Date.now() - existing.createdAt < 270_000) {
+    return Promise.resolve(existing.browser);
+  }
+  if (!globalThis.__naradWarmPending) {
+    globalThis.__naradWarmPending = createWarmBrowser().finally(() => {
+      globalThis.__naradWarmPending = undefined;
+    });
+  }
+  return globalThis.__naradWarmPending;
+}
+
+/** Call when a game starts so the first receipt doesn't pay the session start-up cost. */
+export function prewarmBrowser(): void {
+  void getWarmBrowser().catch(() => {});
+}
+
+async function createWarmBrowser(): Promise<Browser | null> {
   const apiKey = process.env.TINYFISH_API_KEY;
   if (!apiKey) {
     console.warn("[receipt] TINYFISH_API_KEY not configured, cannot start browser session");
@@ -73,11 +88,12 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
   // 15-second total timeout as mandated in plan.md A2.1
   const timeoutMs = 15_000;
 
+  // Session start-up has its own allowance; the 15s budget below is only for capturing.
+  const browser = await withTimeout(getWarmBrowser(), 45_000, null);
+  if (!browser) return undefined;
+
   const capturePromise = (async (): Promise<string | undefined> => {
     await fs.mkdir(receiptsDir, { recursive: true });
-
-    const browser = await getWarmBrowser();
-    if (!browser) return undefined;
 
     const context = browser.contexts()[0] || (await browser.newContext());
     const page = await context.newPage();

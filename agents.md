@@ -218,7 +218,7 @@ Auth: header `X-API-Key: $TINYFISH_API_KEY` (the SDK does this). Full docs: http
 ```
 TINYFISH_API_KEY=
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash     # verify current name in AI Studio
+GEMINI_MODEL=gemini-3.5-flash-lite   # fast + reliable; gemini-3.5-flash-lite is closed to new keys, 3.8-flash was overloaded
 PIPELINE=mock                     # mock | real
 AGENT_RUN_LIMIT=20                # hard cap on real TinyAgent runs (lib/budget.ts refuses beyond)
 AUTO_ESCALATE=false               # if true, unverifiable numeric claims auto-trigger the Investigator

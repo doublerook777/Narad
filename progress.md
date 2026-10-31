@@ -66,7 +66,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 - [x] B1.4 `lib/scoring.ts`
 - [x] B1.5 Landing page
 - [x] B1.6 Room page + claim cards
-- [ ] B2.1 Switch to real pipeline (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
+- [ ] B2.1 Switch to real pipeline (keys in; CLI run works: extraction, verdicts, receipts. Still to do: play the demo in two browser tabs with PIPELINE=real) (A's code is on main and the switch works; keyless run degrades to `unverifiable` with no crash. NOT yet run with real keys)
 - [x] B2.2 Receipts route + thumbnails
 - [x] B2.3 Challenge button + route + scoring
 - [x] B2.4 Investigator card (iframe + steps)
@@ -136,3 +136,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - [B] verified A's merge on main: tsc passes, `PIPELINE=real` without keys → claim `unverifiable` + game continues, mock mode unchanged · next: B2.1 live run once `TINYFISH_API_KEY` and `GEMINI_API_KEY` are in `.env.local` · A: B2.1 stays unticked until a real run works
 - 13:48 [A] configured GEMINI_API_KEY in .env.local · updated model to gemini-3.5-flash-lite · fixed all 29 eslint errors (0 errors, 0 warnings, tsc clean) · smoke test verifies Gemini OK · check script extracts claims successfully via Gemini · awaiting TINYFISH_API_KEY to run live web search, browser receipt screenshot, and smoke --agent
 - 14:30 [A] configured TINYFISH_API_KEY in .env.local · smoke test passed (Search, Fetch, Browser session, Wallet $16.99) · check script ran with live keys: coal (supported), nuclear (supported), Chernobyl (refuted) in 16.59s · fixed warm browser URL and esbuild __name injection in receipt.ts · captured real receipt PNGs in .cache/receipts/ · smoke --agent completed in 3 steps (~$0.05 cost logged) · Member B's tasks left untouched
+- [B] real keys tested: smoke passes Search/Fetch/Browser/wallet ($17.00). CLI: "Chernobyl 1M" `refuted` (OWID+WHO tier 1), "10% of electricity" `supported`, receipts saved with the quote highlighted · my fixes in A's files, on top of A's own fixes (A: please review): `gemini.ts` retries 503/500/"high demand" + 40s call timeout; `receipt.ts` one shared warm session (parallel claims each created one), start-up no longer eats the 15s capture budget, `prewarmBrowser()` called from my join route · known: "Coal 24 deaths/TWh" and "nuclear 0.03" came back `unverifiable` (search missed the OWID page: A, check verify.ts query building) · `npm run check` never exits (open CDP connection), add `process.exit(0)` at the end of scripts/check.ts
