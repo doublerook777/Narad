@@ -72,7 +72,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ passed · ❌ failed (see not
 - [x] B2.4 Investigator card (iframe + steps)
 - [x] B3.1 Game end + winner screen
 - [x] B3.2 Score event feed
-- [ ] B3.3 Empty/loading/error states (mostly done: waiting, loading, not-found, join; no network-error banner yet)
+- [x] B3.3 Empty/loading/error states (waiting, loading, room-not-found, global error + 404 pages, "connection lost" banner, stuck claims settled when the game ends)
 - [ ] D4.3 Backup video
 
 ---
@@ -127,3 +127,4 @@ Format: `HH:MM [A|B] did X · next: Y · notes`
 - [B] did B0.3 demo script (nuclear vs fossil topic) · next: B0.2, then B1.x · DESIGN.md is the UI style guide (warm dark canvas, Inter/DM Mono, no accent colour)
 - [B] did B0.2; disabled `cacheComponents`/`partialPrefetching`/`agentRules` in next.config.ts (shared file, A: pull main) · next: B1.x on b/p1-rooms
 - [B] did B1.1-B1.6 + B2.2/2.3/2.4 + B3.1/3.2 against the mock pipeline (store, scoring, API routes, landing, room page, claim cards, Investigator card, winner screen). Tested a full 3-round game and a challenge in two real browsers · next: merge to main, then B2.1 once A's pipeline lands · `lib/pipeline/index.ts` is a mock-only stub: A, replace it when `check.ts`/`investigate.ts` exist (export real when `PIPELINE=real`)
+- [B] did B3.3 · next: B2.1 once A's check.ts/investigate.ts are on main · note: game end now settles any still-running claims/investigations as unverifiable/failed

@@ -167,6 +167,9 @@ export function tick(code: string): Room | undefined {
   }
   room = getRoom(code)!;
   if (room.status === "finishing" && (pipelineIdle(room) || now > room.turnDeadline)) {
+    // Anything still running after the grace period is settled so the final screen never spins.
+    failClaims(code, () => true);
+    for (const i of room.investigations) failInvestigation(code, i.claimId);
     mutate(code, (r) => { r.status = "finished"; });
   }
   return getRoom(code);

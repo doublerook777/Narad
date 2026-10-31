@@ -20,6 +20,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const [typedName, setTypedName] = useState<string | null>(null);
   const [joinError, setJoinError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [failures, setFailures] = useState(0); // consecutive failed polls
 
   // localStorage is only readable on the client; useSyncExternalStore avoids a hydration mismatch.
   const storedSeat = useSyncExternalStore(subscribeNoop, () => localStorage.getItem(seatKey(code)), () => null);
@@ -38,11 +39,15 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       try {
         const res = await fetch(`/api/rooms/${code}`, { cache: "no-store" });
         if (res.status === 404) { if (!stop) setMissing(true); return; }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: RoomView = await res.json();
         if (stop) return;
+        setFailures(0);
         setSkew(data.serverTime - Date.now());
         setRoom((prev) => (prev && prev.version === data.version ? prev : data));
-      } catch { /* network blip: keep the last state and retry */ }
+      } catch {
+        if (!stop) setFailures((n) => n + 1); // keep the last state and retry on the next tick
+      }
     }
     void tick();
     const id = setInterval(tick, POLL_MS);
@@ -89,6 +94,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   return (
     <Shell
+      banner={failures >= 2 ? "Connection lost. Retrying… your game is safe on the server." : undefined}
       right={
         room.status === "active" ? <Timer remainingMs={remaining} label={myTurn ? "Your time" : `${who}'s time`} />
         : room.status === "finishing" ? <Timer remainingMs={remaining} label="Final checks" /> : null
@@ -179,7 +185,7 @@ function Winner({ room, me }: { room: RoomView; me: "p1" | "p2" | null }) {
   );
 }
 
-function Shell({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
+function Shell({ children, right, banner }: { children: React.ReactNode; right?: React.ReactNode; banner?: string }) {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-hairline bg-canvas">
@@ -188,6 +194,9 @@ function Shell({ children, right }: { children: React.ReactNode; right?: React.R
           {right}
         </div>
       </header>
+      {banner && (
+        <div role="alert" className="border-b border-warn/40 bg-warn/10 px-6 py-2 text-center text-sm text-warn">{banner}</div>
+      )}
       <main className="mx-auto w-full max-w-6xl flex-1 px-6">{children}</main>
     </>
   );

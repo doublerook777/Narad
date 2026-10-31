@@ -31,7 +31,7 @@ export default function ClaimCard({ claim, room, code, me }: Props) {
 
   const verdict = effectiveVerdict(room, claim);
   const v = VERDICT[verdict];
-  const working = claim.status !== "done" && claim.status !== "error";
+  const working = claim.status !== "done" && claim.status !== "error" && room.status !== "finished";
   const inv = room.investigations.find((i) => i.claimId === claim.id);
   const challengesLeft = me ? room.players[me]?.challengesLeft ?? 0 : 0;
   const canChallenge =
