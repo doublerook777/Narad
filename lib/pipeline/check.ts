@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { extractClaims } from "./extract";
 import { verifyClaim } from "./verify";
 import { captureReceipt } from "./receipt";
+import { investigate } from "./investigate";
 import type { CheckInput, Claim } from "../types";
 
 export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Promise<Claim[]> {
@@ -83,6 +84,25 @@ export async function checkTurn(input: CheckInput, emit: (c: Claim) => void): Pr
             }
           } catch (receiptErr) {
             console.warn(`[checkTurn] receipt capture skipped for ${claim.id}:`, receiptErr);
+          }
+        }
+
+        // Phase 3: AUTO_ESCALATE if enabled and claim has unverifiable numeric stats
+        if (
+          claim.verdict === "unverifiable" &&
+          process.env.AUTO_ESCALATE === "true" &&
+          /\b\d+(?:[.,]\d+)?%?\b|\b(?:billion|million|trillion|percent|percentage)\b/i.test(claim.text)
+        ) {
+          console.log(`[checkTurn] AUTO_ESCALATE triggered for claim ${claim.id}`);
+          try {
+            const inv = await investigate(claim, "auto", () => {});
+            if (inv?.result?.verdict && inv.result.verdict !== "unverifiable") {
+              claim.verdict = inv.result.verdict;
+              claim.explanation = `${claim.explanation} (Investigator: ${inv.result.explanation})`;
+              claim.investigationId = inv.id;
+            }
+          } catch (escErr) {
+            console.warn(`[checkTurn] AUTO_ESCALATE failed for ${claim.id}:`, escErr);
           }
         }
 

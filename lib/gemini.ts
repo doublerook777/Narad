@@ -11,14 +11,35 @@ function getClient(): GoogleGenAI {
   return aiClient;
 }
 
-export interface JsonCallParams {
-  prompt: string;
-  schema?: any;
-  systemInstruction?: string;
-  model?: string;
-  cacheKind?: string;
-  cacheKey?: string;
+class Semaphore {
+  private queue: (() => void)[] = [];
+  private active = 0;
+  constructor(private max: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.active < this.max) {
+      this.active++;
+      return;
+    }
+    return new Promise<void>((resolve) => {
+      this.queue.push(() => {
+        this.active++;
+        resolve();
+      });
+    });
+  }
+
+  release(): void {
+    this.active--;
+    const next = this.queue.shift();
+    if (next) {
+      next();
+    }
+  }
 }
+
+// Concurrency limit to prevent overwhelming Gemini per-minute free-tier quotas
+const geminiSemaphore = new Semaphore(2);
 
 function isRateLimitError(err: any): boolean {
   if (!err) return false;
@@ -74,6 +95,7 @@ export async function json<T>(
   let delayMs = 1500;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await geminiSemaphore.acquire();
     try {
       const config: any = {
         responseMimeType: "application/json",
@@ -107,6 +129,8 @@ export async function json<T>(
         continue;
       }
       throw err;
+    } finally {
+      geminiSemaphore.release();
     }
   }
 
