@@ -1,4 +1,5 @@
 export type PlayerSlot = "p1" | "p2";
+export type Stance = "for" | "against";
 export type Verdict = "pending" | "supported" | "refuted" | "misleading" | "unverifiable" | "opinion";
 export type ClaimStatus = "queued" | "searching" | "fetching" | "judging" | "receipt" | "done" | "error";
 
@@ -28,15 +29,20 @@ export interface Investigation {
   result?: { verdict: Verdict; foundValue?: string; sourceUrl?: string; explanation: string };
 }
 
-export interface Turn { id: string; player: PlayerSlot; round: number; text: string; citedUrl?: string; submittedAt: number }
-export interface Player { slot: PlayerSlot; name: string; score: number; challengesLeft: number }
+export interface Turn {
+  id: string; player: PlayerSlot; round: number; text: string; citedUrl?: string; submittedAt: number;
+  // Set by lib/judge.ts a moment after submission. offTopic = some/all of the argument strays from the motion (-20);
+  // wrongSide = it clearly argues against the player's own stance (-5). judged flips to true when the judge has answered.
+  judged?: boolean; offTopic?: boolean; wrongSide?: boolean; judgeNote?: string;
+}
+export interface Player { slot: PlayerSlot; name: string; stance: Stance; score: number; challengesLeft: number }
 export interface ScoreEvent { id: string; at: number; player: PlayerSlot; delta: number; reason: string; claimId?: string }
 
 export interface Room {
   code: string; topic: string;
   status: "waiting" | "active" | "finishing" | "finished";
   players: Partial<Record<PlayerSlot, Player>>;
-  currentPlayer: PlayerSlot; round: number; maxRounds: number;   // maxRounds = 3 (each player gets 3 turns)
+  currentPlayer: PlayerSlot; round: number; maxRounds: number;   // chosen by the creator, 3..20 (default 3): each player gets this many turns
   turnSeconds: number;                                             // chosen by the room creator, 30..120 (default 90)
   turnDeadline: number;                                            // epoch ms, turnSeconds after the turn started (UI-enforced)
   isPublic: boolean;                                               // listed on the home page lobby
@@ -45,4 +51,4 @@ export interface Room {
   version: number;                                                 // ++ on every mutation
 }
 
-export interface CheckInput { topic: string; turn: Turn; opponentLastTurn?: string }
+export interface CheckInput { topic: string; turn: Turn; opponentLastTurn?: string; stance?: Stance }

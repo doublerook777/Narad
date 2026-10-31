@@ -84,6 +84,7 @@ investigate(claim: Claim, requestedBy: PlayerSlot | "auto", emit: (i: Investigat
 
 ```ts
 export type PlayerSlot = "p1" | "p2";
+export type Stance = "for" | "against";
 export type Verdict = "pending" | "supported" | "refuted" | "misleading" | "unverifiable" | "opinion";
 export type ClaimStatus = "queued" | "searching" | "fetching" | "judging" | "receipt" | "done" | "error";
 
@@ -113,15 +114,18 @@ export interface Investigation {
   result?: { verdict: Verdict; foundValue?: string; sourceUrl?: string; explanation: string };
 }
 
-export interface Turn { id: string; player: PlayerSlot; round: number; text: string; citedUrl?: string; submittedAt: number }
-export interface Player { slot: PlayerSlot; name: string; score: number; challengesLeft: number }
+export interface Turn {
+  id: string; player: PlayerSlot; round: number; text: string; citedUrl?: string; submittedAt: number;
+  judged?: boolean; offTopic?: boolean; wrongSide?: boolean; judgeNote?: string;   // set by lib/judge.ts
+}
+export interface Player { slot: PlayerSlot; name: string; stance: Stance; score: number; challengesLeft: number }
 export interface ScoreEvent { id: string; at: number; player: PlayerSlot; delta: number; reason: string; claimId?: string }
 
 export interface Room {
   code: string; topic: string;
   status: "waiting" | "active" | "finishing" | "finished";
   players: Partial<Record<PlayerSlot, Player>>;
-  currentPlayer: PlayerSlot; round: number; maxRounds: number;   // maxRounds = 3 (each player gets 3 turns)
+  currentPlayer: PlayerSlot; round: number; maxRounds: number;   // chosen by the creator, 3..20 (default 3): each player gets this many turns
   turnSeconds: number;                                             // chosen by the room creator, 30..120 (default 90)
   turnDeadline: number;                                            // epoch ms, turnSeconds after the turn started (UI-enforced)
   isPublic: boolean;                                               // listed on the home page lobby
@@ -130,7 +134,7 @@ export interface Room {
   version: number;                                                 // ++ on every mutation
 }
 
-export interface CheckInput { topic: string; turn: Turn; opponentLastTurn?: string }
+export interface CheckInput { topic: string; turn: Turn; opponentLastTurn?: string; stance?: Stance }
 ```
 
 ---
@@ -206,8 +210,10 @@ Auth: header `X-API-Key: $TINYFISH_API_KEY` (the SDK does this). Full docs: http
 | Challenge succeeds (investigation verdict refuted/misleading) | challenger **+10**; the claim is re-scored with the new verdict |
 | Challenge fails (investigation says supported) | challenger **−5** |
 | Relevance | multiply the claim's base points by `relevance` (0.5..1), round to integer |
+| Argument strays from the motion (`Turn.offTopic`) | **−20**, once per turn. If the whole turn is off-topic its claims are not fact-checked |
+| Argument clearly argues the player's own opposite stance (`Turn.wrongSide`) | **−5**, once per turn (not applied on top of off-topic) |
 
-- 3 rounds, alternating p1 → p2. Turn length is set by the room creator (30-120s, default 90). UI timer; on 0 the textbox auto-submits whatever is there.
+- Creator picks the number of rounds (3-20, default 3) and their stance (For/Against); the joiner gets the other stance. Creator speaks first. Alternating p1 → p2. Turn length is set by the room creator (30-120s, default 90). UI timer; on 0 the textbox auto-submits whatever is there.
 - Max 600 chars per argument, max 4 checkable claims extracted per turn.
 - 2 challenges per player per game. A challenge can target any opponent claim whose verdict isn't `pending`.
 - Game ends after the last turn **and** after all checks/investigations finish (or 60s grace, whichever is first).
