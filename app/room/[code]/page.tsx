@@ -22,8 +22,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const [copied, setCopied] = useState(false);
   const [failures, setFailures] = useState(0); // consecutive failed polls
 
-  // localStorage is only readable on the client; useSyncExternalStore avoids a hydration mismatch.
-  const storedSeat = useSyncExternalStore(subscribeNoop, () => localStorage.getItem(seatKey(code)), () => null);
+  // Seat lives in sessionStorage (per tab) so two tabs of one browser can be two different players.
+  // It is only readable on the client; useSyncExternalStore avoids a hydration mismatch.
+  const storedSeat = useSyncExternalStore(subscribeNoop, () => sessionStorage.getItem(seatKey(code)), () => null);
   const pendingName = useSyncExternalStore(subscribeNoop, () => sessionStorage.getItem("narad:pendingName") ?? "", () => "");
   const seat = useMemo<Seat | null>(() => {
     if (seatOverride) return seatOverride;

@@ -41,7 +41,7 @@ every box of the current checkpoint.** If a checkpoint fails, fix it or cut scop
 | B1.2 | B | `lib/pipeline/mock.ts`: fake `checkTurn` / `investigate` with delays and a mix of verdicts. `lib/pipeline/index.ts` switch (A owns the final version; B writes a first stub) |
 | B1.3 | B | API routes: create, join, get, turn (kicks off `checkTurn`, `emit` → store → rescore) |
 | B1.4 | B | `lib/scoring.ts`: `scoreRoom(room)` recomputes all claim points + player scores from scratch (agents.md §7) |
-| B1.5 | B | Landing page (topic picker with 3 preset topics + custom, create/join). Slot saved in `localStorage["narad:<code>"]` |
+| B1.5 | B | Landing page (topic picker with 3 preset topics + custom, create/join). Seat saved in `sessionStorage["narad:<code>"]` (per tab, so 2 tabs of one browser = 2 players) |
 | B1.6 | B | Room page: poll every 1.5s, scoreboard, whose turn, 90s timer, 600-char argument box (+ optional cite URL), turn history, **claim cards** colored by verdict with status spinner, evidence link, explanation, points |
 
 **✅ Checkpoint 1**
