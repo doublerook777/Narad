@@ -16,6 +16,7 @@ console.log(`If they can't connect, open the port on this machine:  sudo firewal
 
 const child = spawn("npx", ["next", "dev", "-H", "0.0.0.0", "-p", port], {
   stdio: "inherit",
+  shell: true,
   env: { ...process.env, PIPELINE: process.env.PIPELINE || "real" },
 });
 child.on("exit", (code) => process.exit(code ?? 0));
