@@ -1,7 +1,7 @@
 import type { Claim, Investigation, Room, ScoreEvent, Verdict } from "./types";
 import { CHALLENGES_PER_PLAYER } from "./constants";
 
-// Pure scoring (agents.md §7). scoreRoom recomputes everything from claims + investigations,
+// Pure scoring. scoreRoom recomputes everything from claims + investigations,
 // so calling it after any mutation is always safe.
 
 const BASE: Record<Verdict, number> = {

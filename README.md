@@ -1,122 +1,97 @@
-# Narad 🔍⚔️
+# Narad
 
-> **Live 1v1 Debate Arena Powered by Real-Time AI Fact-Checking**  
-> Split arguments into claims with **Gemini**, verify against authoritative sources with **TinyFish Search & Fetch**, capture highlighted quote screenshots with **TinyBrowser**, and escalate challenges to **TinyAgent** ("The Investigator") live in an embedded browser stream.
+**Say it. Prove it.**
 
----
+Narad is a 1v1 debate arena where every factual claim is fact-checked while you play. Two players argue a motion, one For and one Against. Each argument is split into claims, each claim is checked against real sources, and the verdict, with a screenshot of the source, appears on the claim card within seconds. Points go to the player whose facts hold up.
 
-## 🏛️ Architecture & Core Flow
+Debates are usually won by whoever sounds most sure. Narad makes the truth the winning move.
+
+## How a game works
+
+1. **Create or join a room.** Pick a motion (or one of the "Hot right now" topics drawn from the news), choose For or Against, the number of rounds (3 to 20) and the turn time (30 to 120 seconds). Rooms can be public, listed in the lobby with live player counts, or private and joined by code.
+2. **Argue.** Players alternate turns. Each argument is up to 600 characters and can cite a URL.
+3. **Watch the checks land.** Every factual claim gets a verdict (supported, refuted, misleading, unverifiable) with quoted evidence from tiered sources and a highlighted screenshot of the page it came from, the receipt.
+4. **Challenge.** Each player has two challenges. Spend one on an opponent's claim and the Investigator, a browser agent, opens a public data portal such as Our World in Data, finds the real figure and re-scores the claim. Both players watch it work in a live embedded view.
+5. **Win on points.** The highest score after the last turn wins.
+
+### Scoring
+
+| Event | Points |
+| :--- | :---: |
+| Supported claim | +10 (first three per turn, +3 after that) |
+| Refuted claim | −15 |
+| Misleading claim | −5 |
+| Unverifiable claim or opinion | 0 |
+| Specific number that no source backed up | −5 |
+| Cited URL backs the claim | +5 |
+| Cited URL misrepresents the claim | −10 |
+| Challenge succeeds | +10 for the challenger, claim re-scored |
+| Challenge fails | −5 for the challenger |
+| Argument strays from the motion | −20 per turn |
+| Argument defends the opposite side | −5 per turn |
+
+Each claim's points are scaled by its relevance to the motion (0.5 to 1). Scores are always recomputed from the claims and challenges, so a re-score can never drift.
+
+## How it works
 
 ```
- Player 1 ──poll 1.5s──┐                          ┌── lib/pipeline/check.ts (Parallel Claim Verification):
- Player 2 ──poll 1.5s──┤                          │      1. Gemini: Claim Extraction (≤4 claims, factual vs opinion)
-                       ▼                          │      2. TinySearch: Tier 1 Credible Domains (fallback unrestricted)
-            app/api/rooms/[code]/*  ──kick off──► │      3. TinyFetch: Top 2-3 Sources (clean Markdown extraction)
-                       │      (fire & forget)     │      4. Gemini: Impartial Verdict + Verbatim Evidence Quote
-                       ▼                          │      5. TinyBrowser: Highlighting + Viewport Screenshot (Receipt)
-            lib/store.ts (In-Memory Room) ◄─emit──┤
-                       ▲                          └── lib/pipeline/investigate.ts (On Player Challenge):
-                       │                                 TinyAgent /run-sse on data portal → Live Streaming View (iframe)
-            lib/scoring.ts (Pure Rules)                   + Real-Time Progress Steps → Structured Verdict → Re-Score Claim
+ Player 1 ──poll──┐                       ┌── lib/pipeline/check.ts, per claim in parallel:
+ Player 2 ──poll──┤                       │     1. Gemini splits the argument into claims
+                  ▼                       │     2. TinyFish Search finds sources (credible domains first)
+        app/api/rooms/[code]/*  ─────────►│     3. TinyFish Fetch reads the best pages
+                  │   (not awaited)       │     4. Gemini returns a verdict and a verbatim quote
+                  ▼                       │     5. TinyFish Browser highlights the quote and screenshots it
+        lib/store.ts (in-memory room) ◄───┤
+                  ▲                       └── lib/pipeline/investigate.ts, on a Challenge:
+                  │                             TinyFish Agent drives a data portal, streamed live
+        lib/scoring.ts (pure rules)
 ```
 
----
+- **Frontend:** Next.js (App Router), React and Tailwind. Clients poll the room state every 1.5 seconds.
+- **Game server:** API routes with an in-memory room store. Checks run in the background so a turn never waits on the pipeline.
+- **AI:** Gemini extracts claims, judges evidence and refereeing (relevance, off-topic and wrong-side arguments).
+- **Web:** TinyFish Search and Fetch for sources, Browser for receipts, Agent for the Investigator.
 
-## 🚀 Quickstart
+Every external call degrades gracefully: if a search, fetch, screenshot or model call fails, the claim becomes "unverifiable" or loses its receipt, and the room keeps going.
 
-### 1. Prerequisites
-- Node.js `v20+` or `v24+`
-- TinyFish API Key ([agent.tinyfish.ai/api-keys](https://agent.tinyfish.ai/api-keys))
-- Google Gemini API Key ([aistudio.google.com](https://aistudio.google.com))
+## Running it
 
-### 2. Setup
+**Requirements:** Node.js 20 or newer, a [TinyFish](https://agent.tinyfish.ai/api-keys) API key and a [Gemini](https://aistudio.google.com) API key.
+
 ```bash
-# Clone the repository
-git clone https://github.com/doublerook777/Narad.git
+git clone git@github.com:doublerook777/Narad.git
 cd Narad
-
-# Install dependencies
 npm install
-
-# Copy environment variables
-cp .env.example .env.local
+cp .env.example .env.local     # then add your two API keys
+npm run lan                    # production build and server on port 3000
 ```
 
-Fill in `.env.local`:
-```ini
-TINYFISH_API_KEY=your_tinyfish_api_key
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-3.5-flash-lite
-PIPELINE=real                     # "real" for live pipeline, "mock" for offline UI dev
-AGENT_RUN_LIMIT=20                # Hard cap on TinyAgent runs to protect $16 budget
-AUTO_ESCALATE=false               # Auto-trigger investigator for unverifiable numeric stats
-DEMO_CACHE=true                   # Cache pipeline outputs in .cache/ for instant re-runs
-```
+Open <http://localhost:3000> in two browser tabs. Each tab is its own player. To play across devices on the same network, open the address `npm run lan` prints on the other device (you may need to allow port 3000 through the host's firewall).
 
-### 3. Verify System Connectivity
-```bash
-# Smoke test (Search, Fetch, Browser session, Gemini, Wallet balance)
-npm run smoke
+Rooms live in the memory of the server process, so run a single long-lived Node server. Serverless hosts such as Vercel are not suitable.
 
-# Smoke test with a live TinyAgent run
-npm run smoke -- --agent
+### Configuration
 
-# Test the fact-checking pipeline from the CLI
-npm run check -- "Nuclear power emits zero carbon emissions during operation."
-```
+Set these in `.env.local`:
 
-### 4. Run the Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in two separate browser tabs to start a 1v1 debate!
+| Variable | Purpose |
+| :--- | :--- |
+| `TINYFISH_API_KEY` | TinyFish key (Search, Fetch, Browser, Agent) |
+| `GEMINI_API_KEY` | Gemini key |
+| `GEMINI_MODEL` | Gemini model name, default `gemini-3.5-flash-lite` |
+| `PIPELINE` | `real` for live checks, `mock` for fake data with no API calls |
+| `AGENT_RUN_LIMIT` | Hard cap on Investigator runs (the Agent is billed per step, about $0.016) |
+| `AUTO_ESCALATE` | If `true`, unverifiable numeric claims trigger the Investigator automatically |
+| `DEMO_CACHE` | If `true`, a repeated claim is served from the `.cache/` folder |
 
----
+### Scripts
 
-## 📋 Member Ownership & File Structure
-
-| Member | Responsibility | Key Files Owned |
-| :--- | :--- | :--- |
-| **Member A** | **Pipeline & Backend** | `lib/tinyfish.ts`<br>`lib/gemini.ts`<br>`lib/budget.ts`<br>`lib/sources.ts`<br>`lib/cache.ts`<br>`lib/pipeline/*`<br>`app/api/health/route.ts`<br>`scripts/*` |
-| **Member B** | **Game & Multiplayer UI** | `app/page.tsx`<br>`app/room/[code]/page.tsx`<br>`app/api/rooms/*`<br>`app/api/receipts/*`<br>`components/*`<br>`lib/store.ts`<br>`lib/scoring.ts` |
-| **Shared** | **Contracts** | `lib/types.ts`<br>`package.json`<br>`.env.example` |
-
----
-
-## 💰 TinyFish Budget Policy ($16 Cap)
-
-- **Search & Fetch are FREE**: Used freely with 10s / 30s timeouts.
-- **Browser ($0.002/min)**: A single warm browser session is kept on `globalThis` (`timeout_seconds: 300`) and reused across receipt screenshots to prevent startup latency and waste.
-- **TinyAgent ($0.016/step)**: Capped by `lib/budget.ts` (`AGENT_RUN_LIMIT=20`). Every run is tracked in `.cache/budget.json` with step counts and estimated costs.
-- **UI Development**: Set `PIPELINE=mock` to build and test frontend components with simulated delays at zero cost.
-
----
-
-## 🎮 Game Rules & Scoring
-
-| Outcome | Point Delta | Description |
-| :--- | :---: | :--- |
-| **Supported Claim** | **+10** | First 3 supported claims per turn (+3 for additional) |
-| **Refuted Claim** | **−15** | Debunked claim contradicted by credible sources |
-| **Misleading Claim** | **−5** | Technically true but cherry-picked or deceptive |
-| **Unverifiable / Opinion** | **0** | Subjective opinion or lack of conclusive data |
-| **Cited URL Matches** | **+5** | Debater provides an authoritative source confirming their statement |
-| **Cited URL Misrepresented** | **−10** | Debater cites a source that does not support their claim |
-| **Successful Challenge** | **+10** | Opponent challenges claim; Investigator disproves it |
-| **Failed Challenge** | **−5** | Opponent challenges claim; Investigator confirms it |
-
----
-
-## 🛠️ Available Scripts
-
-- `npm run dev` — Start the local Next.js development server
-- `npx tsc --noEmit` — Typecheck the full codebase
-- `npm run smoke` — Verify TinyFish, Gemini, and browser connectivity
-- `npm run check -- "<argument text>"` — Run the real fact-checking pipeline on a test argument from the CLI
-- `npm run build` — Build production bundle
-
-## Playing with a teammate on the same Wi-Fi
-
-One person runs `npm run lan` (production build, stable; it prints the URL). While editing code use `npm run lan:dev` (hot reload, but the home page can start flickering after a long session: restart it). The other opens that URL in a browser, no install needed.
-Rooms live in the host's memory, so only the host runs the server. If the other laptop can't connect, the host may need to open the port
-(`sudo firewall-cmd --add-port=3000/tcp` on Fedora). To test alone, open two tabs of the same browser: each tab is its own player.
+| Command | What it does |
+| :--- | :--- |
+| `npm run lan` | Production build and server, reachable on the local network |
+| `npm run lan:dev` | Same, with hot reload for development |
+| `npm run dev` | Standard Next.js dev server |
+| `PIPELINE=mock npm run lan` | Play with simulated checks, free and offline |
+| `npm run smoke` | Check connectivity to TinyFish and Gemini (`-- --agent` adds one small Investigator run) |
+| `npm run check -- "text"` | Run the fact-checking pipeline on one argument and print the claims |
+| `npx tsc --noEmit` | Typecheck |

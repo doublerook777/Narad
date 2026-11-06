@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import type { CheckInput, Claim, Evidence, Investigation, PlayerSlot } from "../types";
 import { MAX_CLAIMS_PER_TURN } from "../constants";
 
-// Fake pipeline so the UI can be built without A's real one. Same signatures as agents.md §3.
+// Fake pipeline so the UI can run without live API calls. Same signatures as the real pipeline.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const jitter = (base: number) => base + Math.random() * base;
 

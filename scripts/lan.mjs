@@ -13,7 +13,7 @@ const urls = Object.values(networkInterfaces())
   .map((n) => `http://${n.address}:${port}`);
 
 console.log(`\nMode: ${dev ? "development (hot reload)" : "production (stable)"}   Pipeline: ${env.PIPELINE}  (PIPELINE=mock npm run lan for free fake checks)`);
-console.log("Share one of these with your teammate (same Wi-Fi/LAN):");
+console.log("Share one of these with the other players (same Wi-Fi/LAN):");
 urls.forEach((u) => console.log("   " + u));
 console.log(`If they can't connect, open the port on this machine:  sudo firewall-cmd --add-port=${port}/tcp\n`);
 

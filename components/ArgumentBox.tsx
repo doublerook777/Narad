@@ -26,7 +26,7 @@ export default function ArgumentBox({ code, slot, turnKey, remainingMs, totalSec
     else { sent.current = ""; setError(data.error ?? "Could not submit."); }
   }
 
-  // When the clock hits zero, send whatever is in the box (agents.md §7).
+  // When the clock hits zero, send whatever is in the box.
   useEffect(() => {
     if (remainingMs > 0) return;
     const t = setTimeout(() => void submit(true), 0);

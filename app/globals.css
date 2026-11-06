@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Tokens from DESIGN.md: warm dark canvas, off-white ink, hairline borders, tight radii. */
+/* Design tokens: warm dark canvas, off-white ink, hairline borders, tight radii. */
 @theme inline {
   --color-canvas: #2b2622;
   --color-canvas-soft: #383330;

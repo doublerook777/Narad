@@ -1,4 +1,4 @@
-// Client-safe constants (no node imports). Rules from agents.md §7.
+// Client-safe constants (no node imports). Game rules.
 export const DEFAULT_TURN_SECONDS = 90;
 export const MIN_TURN_SECONDS = 30;
 export const MAX_TURN_SECONDS = 120; // room creator picks, never more than 2 minutes

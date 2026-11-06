@@ -49,7 +49,7 @@ export async function search(query: string, options?: SearchOptions): Promise<Se
       purpose: options?.purpose,
     });
 
-    // 10s timeout as specified in plan.md A1.1
+    // 10s timeout
     const res = await withTimeout(task, 10_000, null);
     if (!res || !Array.isArray(res.results)) return [];
     return res.results;
@@ -83,7 +83,7 @@ export async function fetchPages(urls: string[], purpose?: string): Promise<Fetc
       per_url_timeout_ms: 25_000,
     });
 
-    // 30s timeout as specified in plan.md A1.1
+    // 30s timeout
     const res = await withTimeout(task, 30_000, null);
     if (!res || !Array.isArray(res.results)) return [];
 

@@ -99,7 +99,7 @@ export async function captureReceipt(input: CaptureReceiptInput): Promise<string
   const receiptsDir = path.join(process.cwd(), ".cache", "receipts");
   const receiptFilePath = path.join(receiptsDir, `${id}.png`);
 
-  // 15-second total timeout as mandated in plan.md A2.1
+  // 15-second total timeout
   const timeoutMs = 25_000; // per capture, counted once a slot is free (was 15s: too tight when pages load in parallel)
 
   // Session start-up has its own allowance; the 15s budget below is only for capturing.
